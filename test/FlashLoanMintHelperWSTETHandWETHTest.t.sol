@@ -243,4 +243,20 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
         assertEq(expectedWEth, 9987671844167849941);
         assertEq(IERC20(WETH).balanceOf(user) - balanceBefore, 9987671844167849941);
     }
+
+    function test_burnSharesWithCurveAndFlashLoanBorrowRandomNumber() public {
+        uint256 randomNumber = 324967052170187234589;
+        vault._mint(user, randomNumber);
+        uint256 sharesToBurn = randomNumber;
+
+        vm.startPrank(user);
+
+        uint256 balanceBefore = IERC20(WETH).balanceOf(user);
+
+        vault.approve(address(helper), sharesToBurn);
+        uint256 expectedWEth = helper.burnSharesWithCurveAndFlashLoanBorrow(sharesToBurn, 324482386022157061368);
+
+        assertEq(expectedWEth, 324482386022157061368);
+        assertEq(IERC20(WETH).balanceOf(user) - balanceBefore, 324482386022157061368);
+    }
 }
