@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {Safe4626CollateralHelper} from "../src/Safe4626CollateralHelper.sol";
 import {MockERC4626CollateralVault} from "./mocks/MockERC4626CollateralVault.sol";
 import {IERC4626Collateral} from "../src/interfaces/IERC4626Collateral.sol";
@@ -329,14 +329,13 @@ contract Safe4626CollateralHelperTest is Test {
     function test_FullMintRedeemCycle() public {
         // Mint
         uint256 mintShares = 100e18;
-        uint256 mintAssets = helper.safeMintCollateral(vault, mintShares, owner, mintShares * 105 / 100);
+        helper.safeMintCollateral(vault, mintShares, owner, mintShares * 105 / 100);
 
         assertEq(vault.balanceOf(owner), mintShares);
 
         // Redeem
         uint256 redeemShares = 50e18;
-        uint256 redeemAssets =
-            helper.safeRedeemCollateral(vault, redeemShares, receiver, owner, redeemShares * 95 / 100);
+        helper.safeRedeemCollateral(vault, redeemShares, receiver, owner, redeemShares * 95 / 100);
 
         assertEq(vault.balanceOf(owner), mintShares - redeemShares);
     }

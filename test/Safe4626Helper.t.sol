@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {Safe4626Helper} from "../src/Safe4626Helper.sol";
 import {MockERC4626Vault} from "./mocks/MockERC4626Vault.sol";
 import {IERC4626} from "../src/interfaces/IERC4626.sol";

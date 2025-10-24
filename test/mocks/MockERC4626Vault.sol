@@ -5,7 +5,7 @@ import {IERC4626} from "../../src/interfaces/IERC4626.sol";
 import {IERC20} from "../../src/interfaces/IERC4626.sol";
 
 contract MockERC4626Vault is IERC4626 {
-    IERC20 public immutable assetToken;
+    IERC20 public immutable ASSET_TOKEN;
     uint256 public totalAssetsAmount;
     uint256 public totalSharesAmount;
     uint256 public exchangeRate = 1e18; // 1:1 by default
@@ -20,7 +20,7 @@ contract MockERC4626Vault is IERC4626 {
     uint8 public decimals = 18;
 
     constructor(address _asset) {
-        assetToken = IERC20(_asset);
+        ASSET_TOKEN = IERC20(_asset);
     }
 
     function setExchangeRate(uint256 _rate) external {
@@ -58,7 +58,7 @@ contract MockERC4626Vault is IERC4626 {
     }
 
     function asset() external view override returns (address) {
-        return address(assetToken);
+        return address(ASSET_TOKEN);
     }
 
     function totalAssets() external view override returns (uint256) {
