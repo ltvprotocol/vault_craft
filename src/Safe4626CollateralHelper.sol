@@ -11,7 +11,7 @@ contract Safe4626CollateralHelper {
         external
         returns (uint256 shares)
     {
-        if (address(vault) == address(0)) revert InvalidVault(address(vault));
+        require(address(vault) != address(0), InvalidVault(address(vault)));
 
         shares = vault.depositCollateral(assets, receiver);
         if (shares < minSharesOut) revert SlippageExceeded(shares, minSharesOut, minSharesOut);
@@ -21,7 +21,7 @@ contract Safe4626CollateralHelper {
         external
         returns (uint256 assets)
     {
-        if (address(vault) == address(0)) revert InvalidVault(address(vault));
+        require(address(vault) != address(0), InvalidVault(address(vault)));
 
         assets = vault.mintCollateral(shares, receiver);
         if (assets > maxAssetsIn) revert SlippageExceeded(maxAssetsIn, assets, maxAssetsIn);
@@ -34,7 +34,7 @@ contract Safe4626CollateralHelper {
         address owner,
         uint256 maxSharesOut
     ) external returns (uint256 shares) {
-        if (address(vault) == address(0)) revert InvalidVault(address(vault));
+        require(address(vault) != address(0), InvalidVault(address(vault)));
 
         shares = vault.withdrawCollateral(assets, receiver, owner);
         if (shares > maxSharesOut) revert SlippageExceeded(maxSharesOut, shares, maxSharesOut);
@@ -47,7 +47,7 @@ contract Safe4626CollateralHelper {
         address owner,
         uint256 minAssetsOut
     ) external returns (uint256 assets) {
-        if (address(vault) == address(0)) revert InvalidVault(address(vault));
+        require(address(vault) != address(0), InvalidVault(address(vault)));
 
         assets = vault.redeemCollateral(shares, receiver, owner);
         if (assets < minAssetsOut) revert SlippageExceeded(assets, minAssetsOut, minAssetsOut);
