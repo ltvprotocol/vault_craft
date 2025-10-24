@@ -44,8 +44,12 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         (assetsCollateral,) = _previewMintSharesWithFlashLoanCollateral(sharesToMint);
     }
 
-    function previewBurnSharesWithCurveAndFlashLoan(uint256 sharesToBurn) public view returns (uint256 expectedWEth) {
-        (expectedWEth,,) = _previewBurnSharesWithCurveAndFlashLoan(sharesToBurn);
+    function previewBurnSharesWithCurveAndFlashLoanBorrow(uint256 sharesToBurn)
+        public
+        view
+        returns (uint256 expectedWEth)
+    {
+        (expectedWEth,,) = _previewBurnSharesWithCurveAndFlashLoanBorrow(sharesToBurn);
     }
 
     function mintSharesWithFlashLoanCollateral(uint256 sharesToMint) external returns (uint256) {
@@ -56,9 +60,9 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         return netWstEth;
     }
 
-    function burnSharesWithCurveAndFlashLoan(uint256 sharesToBurn, uint256 minWeth) external returns (uint256) {
+    function burnSharesWithCurveAndFlashLoanBorrow(uint256 sharesToBurn, uint256 minWeth) external returns (uint256) {
         (uint256 expectedWEth, uint256 flashAmount, uint256 stEthToSwap) =
-            _previewBurnSharesWithCurveAndFlashLoan(sharesToBurn);
+            _previewBurnSharesWithCurveAndFlashLoanBorrow(sharesToBurn);
 
         require(expectedWEth >= minWeth, SlippageExceeded(expectedWEth, minWeth));
 
@@ -160,7 +164,7 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         return (assetsCollateral, flashAmount);
     }
 
-    function _previewBurnSharesWithCurveAndFlashLoan(uint256 sharesToBurn)
+    function _previewBurnSharesWithCurveAndFlashLoanBorrow(uint256 sharesToBurn)
         internal
         view
         returns (uint256, uint256, uint256)

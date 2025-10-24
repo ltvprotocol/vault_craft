@@ -222,14 +222,14 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
         vm.stopPrank();
     }
 
-    function test_previewBurnSharesWithCurveAndFlashLoan() public view {
+    function test_previewBurnSharesWithCurveAndFlashLoanBorrow() public view {
         uint256 sharesToBurn = 10 ether;
-        uint256 expectedWEth = helper.previewBurnSharesWithCurveAndFlashLoan(sharesToBurn);
+        uint256 expectedWEth = helper.previewBurnSharesWithCurveAndFlashLoanBorrow(sharesToBurn);
 
         assertEq(expectedWEth, 9987671844167849941);
     }
 
-    function test_burnSharesWithCurveAndFlashLoan() public {
+    function test_burnSharesWithCurveAndFlashLoanBorrow() public {
         vault._mint(user, 10 ether);
         uint256 sharesToBurn = 10 ether;
 
@@ -238,7 +238,7 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
         uint256 balanceBefore = IERC20(WETH).balanceOf(user);
 
         vault.approve(address(helper), sharesToBurn);
-        uint256 expectedWEth = helper.burnSharesWithCurveAndFlashLoan(sharesToBurn, 9987671844167849941);
+        uint256 expectedWEth = helper.burnSharesWithCurveAndFlashLoanBorrow(sharesToBurn, 9987671844167849941);
 
         assertEq(expectedWEth, 9987671844167849941);
         assertEq(IERC20(WETH).balanceOf(user) - balanceBefore, 9987671844167849941);
