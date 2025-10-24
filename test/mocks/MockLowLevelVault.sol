@@ -3,8 +3,12 @@ pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILowLevelVault} from "src/interfaces/ILowLevelVault.sol";
+import {IstEth} from "src/interfaces/tokens/IstEth.sol";
 
+// forge-lint: disable-start
 contract MockLowLevelVault is ILowLevelVault {
+    IstEth constant STETH = IstEth(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+
     IERC20 immutable collateralToken;
     IERC20 immutable borrowToken;
 
@@ -18,7 +22,6 @@ contract MockLowLevelVault is ILowLevelVault {
 
     uint256 constant TARGET_LTV_DIVIDEND = 3;
     uint256 constant TARGET_LTV_DIVIDER = 4;
-    uint256 constant SHARES_MINTED_FOR_COLLATERAL = 10;
 
     constructor(address _collateralToken, address _borrowToken) {
         collateralToken = IERC20(_collateralToken);
@@ -30,35 +33,28 @@ contract MockLowLevelVault is ILowLevelVault {
         view
         returns (int256 deltaCollateral, int256 deltaBorrow)
     {
-        if (deltaShares < 0) {
-            return (0, 0);
+        if (deltaShares >= 0) {
+            deltaCollateral = int256(STETH.getSharesByPooledEth(uint256(deltaShares * int256(TARGET_LTV_DIVIDER))));
+        } else {
+            deltaCollateral = -int256(STETH.getSharesByPooledEth(uint256(-deltaShares * int256(TARGET_LTV_DIVIDER))));
         }
-
-        deltaCollateral = int256((uint256(deltaShares) * TARGET_LTV_DIVIDER) / SHARES_MINTED_FOR_COLLATERAL);
-        uint256 deltaBorrowInCollateral = (uint256(deltaCollateral) * TARGET_LTV_DIVIDEND) / TARGET_LTV_DIVIDER;
-
-        deltaBorrow = getDeltaBorrow(deltaBorrowInCollateral);
-    }
-
-    function getDeltaBorrow(uint256 _deltaBorrowInCollateral) internal view virtual returns (int256) {
-        return int256(_deltaBorrowInCollateral);
+        deltaBorrow = deltaShares * int256(TARGET_LTV_DIVIDEND);
     }
 
     function executeLowLevelRebalanceShares(int256 deltaShares)
         external
         returns (int256 deltaCollateral, int256 deltaBorrow)
     {
-        if (deltaShares < 0) {
-            return (0, 0);
-        }
-
         (deltaCollateral, deltaBorrow) = previewLowLevelRebalanceShares(deltaShares);
-
-        require(deltaCollateral > 0 && deltaBorrow > 0, "No rebalance available now!");
-
-        collateralToken.transferFrom(msg.sender, address(this), uint256(deltaCollateral));
-        _mint(msg.sender, uint256(deltaShares));
-        borrowToken.transfer(msg.sender, uint256(deltaBorrow));
+        if (deltaShares >= 0) {
+            collateralToken.transferFrom(msg.sender, address(this), uint256(deltaCollateral));
+            _mint(msg.sender, uint256(deltaShares));
+            borrowToken.transfer(msg.sender, uint256(deltaBorrow));
+        } else {
+            borrowToken.transferFrom(msg.sender, address(this), uint256(-deltaBorrow));
+            _burn(msg.sender, uint256(-deltaShares));
+            collateralToken.transfer(msg.sender, uint256(-deltaCollateral));
+        }
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
@@ -89,4 +85,12 @@ contract MockLowLevelVault is ILowLevelVault {
         balanceOf[to] += amount;
         emit Transfer(address(0), to, amount);
     }
+
+    function _burn(address from, uint256 amount) internal {
+        totalSupply -= amount;
+        balanceOf[from] -= amount;
+        emit Transfer(from, address(0), amount);
+    }
 }
+
+// forge-lint: disable-end
