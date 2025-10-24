@@ -29,22 +29,18 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         LTV_VAULT = ILowLevelVault(_ltvVault);
     }
 
-    function previewMintSharesWithFlashLoan(uint256 sharesToMint) public view returns (uint256 assetsCollateral) {
-        (assetsCollateral,) = _previewMintSharesWithFlashLoan(sharesToMint);
+    function previewMintSharesWithFlashLoanCollateral(uint256 sharesToMint) public view returns (uint256 assetsCollateral) {
+        (assetsCollateral,) = _previewMintSharesWithFlashLoanCollateral(sharesToMint);
     }
 
-    function mintSharesWithFlashLoan(uint256 sharesToMint) external {
-        (uint256 netWstEth, uint256 flashAmount) = _previewMintSharesWithFlashLoan(sharesToMint);
+    function mintSharesWithFlashLoanCollateral(uint256 sharesToMint) external {
+        (uint256 netWstEth, uint256 flashAmount) = _previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
-        IERC20[] memory tokens = new IERC20[](1);
-        tokens[0] = WETH;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = flashAmount;
-        bytes memory userData = abi.encode(msg.sender, sharesToMint, netWstEth);
-
-        BALANCER_VAULT.flashLoan(IFlashLoanRecipient(this), tokens, amounts, userData);
+        _startFlashLoan(flashAmount, abi.encode(msg.sender, sharesToMint, netWstEth));
     }
 
+    receive() external payable {}
+    
     function receiveFlashLoan(
         IERC20[] memory tokens,
         uint256[] memory amounts,
@@ -77,9 +73,16 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         emit SharesMinted(user, sharesToMint);
     }
 
-    receive() external payable {}
+    function _startFlashLoan(uint256 flashAmount, bytes memory data) internal {
+        IERC20[] memory tokens = new IERC20[](1);
+        tokens[0] = WETH;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = flashAmount;
 
-    function _previewMintSharesWithFlashLoan(uint256 sharesToMint) internal view returns (uint256, uint256) {
+        BALANCER_VAULT.flashLoan(IFlashLoanRecipient(this), tokens, amounts, data);
+    }
+
+    function _previewMintSharesWithFlashLoanCollateral(uint256 sharesToMint) internal view returns (uint256, uint256) {
         // shares to mint are not expected to exceed int256 max value
         // forge-lint: disable-next-line(unsafe-typecast)
         (int256 deltaCollateral, int256 deltaBorrow) = LTV_VAULT.previewLowLevelRebalanceShares(int256(sharesToMint));

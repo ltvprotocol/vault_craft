@@ -30,13 +30,13 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
     function test_MintSmallAmount() public {
         uint256 sharesToMint = 1 ether;
 
-        uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+        uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         vm.startPrank(user);
         uint256 userSharesBefore = vault.balanceOf(user);
 
         IERC20(WSTETH).approve(address(helper), netWstEth);
-        helper.mintSharesWithFlashLoan(sharesToMint);
+        helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
 
         uint256 userSharesAfter = vault.balanceOf(user);
@@ -47,13 +47,13 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
     function test_MintMediumAmount() public {
         uint256 sharesToMint = 10 ether;
 
-        uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+        uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         vm.startPrank(user);
         uint256 userSharesBefore = vault.balanceOf(user);
 
         IERC20(WSTETH).approve(address(helper), netWstEth);
-        helper.mintSharesWithFlashLoan(sharesToMint);
+        helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
 
         uint256 userSharesAfter = vault.balanceOf(user);
@@ -64,13 +64,13 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
     function test_MintLargeAmount() public {
         uint256 sharesToMint = 100 ether;
 
-        uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+        uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         vm.startPrank(user);
         uint256 userSharesBefore = vault.balanceOf(user);
 
         IERC20(WSTETH).approve(address(helper), netWstEth);
-        helper.mintSharesWithFlashLoan(sharesToMint);
+        helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
 
         uint256 userSharesAfter = vault.balanceOf(user);
@@ -81,13 +81,13 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
     function test_MintVerySmallAmount() public {
         uint256 sharesToMint = 0.1 ether;
 
-        uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+        uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         vm.startPrank(user);
         uint256 userSharesBefore = vault.balanceOf(user);
 
         IERC20(WSTETH).approve(address(helper), netWstEth);
-        helper.mintSharesWithFlashLoan(sharesToMint);
+        helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
 
         uint256 userSharesAfter = vault.balanceOf(user);
@@ -98,13 +98,13 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
     function test_MintPrecisionAmount() public {
         uint256 sharesToMint = 1.5 ether;
 
-        uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+        uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         vm.startPrank(user);
         uint256 userSharesBefore = vault.balanceOf(user);
 
         IERC20(WSTETH).approve(address(helper), netWstEth);
-        helper.mintSharesWithFlashLoan(sharesToMint);
+        helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
 
         uint256 userSharesAfter = vault.balanceOf(user);
@@ -117,13 +117,13 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
         // Bound to reasonable values to avoid overflow and ensure vault has enough liquidity
         sharesToMint = bound(sharesToMint, 0.01 ether, 1000 ether);
 
-        uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+        uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         vm.startPrank(user);
         uint256 userSharesBefore = vault.balanceOf(user);
 
         IERC20(WSTETH).approve(address(helper), netWstEth);
-        helper.mintSharesWithFlashLoan(sharesToMint);
+        helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
 
         uint256 userSharesAfter = vault.balanceOf(user);
@@ -141,13 +141,13 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
         for (uint256 i = 0; i < numMints; i++) {
             uint256 sharesToMint = baseAmount + (i * 0.1 ether); // Vary amounts slightly
 
-            uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+            uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
             vm.startPrank(user);
             uint256 userSharesBefore = vault.balanceOf(user);
 
             IERC20(WSTETH).approve(address(helper), netWstEth);
-            helper.mintSharesWithFlashLoan(sharesToMint);
+            helper.mintSharesWithFlashLoanCollateral(sharesToMint);
             vm.stopPrank();
 
             uint256 userSharesAfter = vault.balanceOf(user);
@@ -163,13 +163,13 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
     function test_MinimumAmount() public {
         uint256 sharesToMint = 0.001 ether;
 
-        uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+        uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         vm.startPrank(user);
         uint256 userSharesBefore = vault.balanceOf(user);
 
         IERC20(WSTETH).approve(address(helper), netWstEth);
-        helper.mintSharesWithFlashLoan(sharesToMint);
+        helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
 
         uint256 userSharesAfter = vault.balanceOf(user);
@@ -178,11 +178,11 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
 
     function test_NoTokensLeftInHelper() public {
         uint256 sharesToMint = 0.99999999 ether;
-        uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+        uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         vm.startPrank(user);
         IERC20(WSTETH).approve(address(helper), netWstEth);
-        helper.mintSharesWithFlashLoan(sharesToMint);
+        helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
 
         // Verify helper doesn't hold any tokens after execution
@@ -195,14 +195,14 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
 
     function test_RevertOnInsufficientApproval() public {
         uint256 sharesToMint = 10 ether;
-        uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+        uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         vm.startPrank(user);
         // Approve less than needed
         IERC20(WSTETH).approve(address(helper), netWstEth - 1);
 
         vm.expectRevert();
-        helper.mintSharesWithFlashLoan(sharesToMint);
+        helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
     }
 
@@ -210,13 +210,13 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
         address poorUser = makeAddr("poorUser");
         uint256 sharesToMint = 10 ether;
 
-        uint256 netWstEth = helper.previewMintSharesWithFlashLoan(sharesToMint);
+        uint256 netWstEth = helper.previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         vm.startPrank(poorUser);
         IERC20(WSTETH).approve(address(helper), netWstEth);
 
         vm.expectRevert();
-        helper.mintSharesWithFlashLoan(sharesToMint);
+        helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
     }
 }
