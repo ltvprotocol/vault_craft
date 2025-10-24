@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {IERC4626} from "./interfaces/IERC4626.sol";
 
 contract Safe4626Helper {
-    error SlippageExceeded(uint256 expected, uint256 actual, uint256 minRequired);
+    error SlippageExceeded(uint256 actual);
     error InvalidVault(address vault);
 
     function safeDeposit(IERC4626 vault, uint256 assets, address receiver, uint256 minSharesOut)
@@ -13,8 +13,12 @@ contract Safe4626Helper {
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        shares = vault.deposit(assets, receiver);
-        if (shares < minSharesOut) revert SlippageExceeded(shares, minSharesOut, minSharesOut);
+        try vault.deposit(assets, receiver) returns (uint256 returnedShares) {
+            shares = returnedShares;
+            require((shares >= minSharesOut), SlippageExceeded(shares));
+        } catch {
+            revert InvalidVault(address(vault));
+        }
     }
 
     function safeMint(IERC4626 vault, uint256 shares, address receiver, uint256 maxAssetsIn)
@@ -23,8 +27,12 @@ contract Safe4626Helper {
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        assets = vault.mint(shares, receiver);
-        if (assets > maxAssetsIn) revert SlippageExceeded(maxAssetsIn, assets, maxAssetsIn);
+        try vault.mint(shares, receiver) returns (uint256 returnedAssets) {
+            assets = returnedAssets;
+            require((assets <= maxAssetsIn), SlippageExceeded(assets));
+        } catch {
+            revert InvalidVault(address(vault));
+        }
     }
 
     function safeWithdraw(IERC4626 vault, uint256 assets, address receiver, address owner, uint256 maxSharesOut)
@@ -33,8 +41,12 @@ contract Safe4626Helper {
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        shares = vault.withdraw(assets, receiver, owner);
-        if (shares > maxSharesOut) revert SlippageExceeded(maxSharesOut, shares, maxSharesOut);
+        try vault.withdraw(assets, receiver, owner) returns (uint256 returnedShares) {
+            shares = returnedShares;
+            require((shares <= maxSharesOut), SlippageExceeded(shares));
+        } catch {
+            revert InvalidVault(address(vault));
+        }
     }
 
     function safeRedeem(IERC4626 vault, uint256 shares, address receiver, address owner, uint256 minAssetsOut)
@@ -43,7 +55,11 @@ contract Safe4626Helper {
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        assets = vault.redeem(shares, receiver, owner);
-        if (assets < minAssetsOut) revert SlippageExceeded(assets, minAssetsOut, minAssetsOut);
+        try vault.redeem(shares, receiver, owner) returns (uint256 returnedAssets) {
+            assets = returnedAssets;
+            require((assets >= minAssetsOut), SlippageExceeded(assets));
+        } catch {
+            revert InvalidVault(address(vault));
+        }
     }
 }

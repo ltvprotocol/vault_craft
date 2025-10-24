@@ -71,7 +71,7 @@ contract Safe4626CollateralHelperTest is Test {
 
         vault.setShouldRevert(true, "Vault error");
 
-        vm.expectRevert("Vault error");
+        vm.expectRevert(abi.encodeWithSelector(Safe4626CollateralHelper.InvalidVault.selector, address(vault)));
         helper.safeDepositCollateral(vault, assets, receiver, minSharesOut);
     }
 
@@ -100,9 +100,7 @@ contract Safe4626CollateralHelperTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 Safe4626CollateralHelper.SlippageExceeded.selector,
-                maxAssetsIn, // expected
-                expectedAssets, // actual
-                maxAssetsIn // minRequired
+                expectedAssets // actual
             )
         );
 
@@ -124,7 +122,7 @@ contract Safe4626CollateralHelperTest is Test {
 
         vault.setShouldRevert(true, "Vault error");
 
-        vm.expectRevert("Vault error");
+        vm.expectRevert(abi.encodeWithSelector(Safe4626CollateralHelper.InvalidVault.selector, address(vault)));
         helper.safeMintCollateral(vault, shares, receiver, maxAssetsIn);
     }
 
@@ -161,9 +159,7 @@ contract Safe4626CollateralHelperTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 Safe4626CollateralHelper.SlippageExceeded.selector,
-                maxSharesOut, // expected
-                expectedShares, // actual
-                maxSharesOut // minRequired
+                expectedShares // actual
             )
         );
 
@@ -185,7 +181,7 @@ contract Safe4626CollateralHelperTest is Test {
 
         vault.setShouldRevert(true, "Vault error");
 
-        vm.expectRevert("Vault error");
+        vm.expectRevert(abi.encodeWithSelector(Safe4626CollateralHelper.InvalidVault.selector, address(vault)));
         helper.safeWithdrawCollateral(vault, withdrawAssets, receiver, owner, maxSharesOut);
     }
 
@@ -239,7 +235,7 @@ contract Safe4626CollateralHelperTest is Test {
 
         vault.setShouldRevert(true, "Vault error");
 
-        vm.expectRevert("Vault error");
+        vm.expectRevert(abi.encodeWithSelector(Safe4626CollateralHelper.InvalidVault.selector, address(vault)));
         helper.safeRedeemCollateral(vault, redeemShares, receiver, owner, minAssetsOut);
     }
 
