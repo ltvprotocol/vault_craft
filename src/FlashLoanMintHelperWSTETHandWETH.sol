@@ -10,6 +10,12 @@ import {IBalancerVault} from "src/interfaces/balancer/IBalancerVault.sol";
 import {IFlashLoanRecipient} from "src/interfaces/balancer/IFlashLoanRecipient.sol";
 import {ILowLevelVault} from "src/interfaces/ILowLevelVault.sol";
 import {IFlashLoanMintHelper} from "src/interfaces/IFlashLoanMintHelper.sol";
+import {ICurve} from "src/interfaces/ICurve.sol";
+
+enum FlashLoanType {
+    DEPOSIT,
+    WITHDRAW_CURVE
+}
 
 contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMintHelper {
     using SafeERC20 for IERC20;
@@ -22,6 +28,7 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
     IWETH constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     IstEth constant STETH = IstEth(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
     IwstEth constant WSTETH = IwstEth(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
+    ICurve constant CURVE = ICurve(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022);
 
     ILowLevelVault public immutable LTV_VAULT;
 
@@ -37,10 +44,29 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         (assetsCollateral,) = _previewMintSharesWithFlashLoanCollateral(sharesToMint);
     }
 
-    function mintSharesWithFlashLoanCollateral(uint256 sharesToMint) external {
+    function previewBurnSharesWithCurveAndFlashLoan(uint256 sharesToBurn) public view returns (uint256 expectedWEth) {
+        (expectedWEth,,) = _previewBurnSharesWithCurveAndFlashLoan(sharesToBurn);
+    }
+
+    function mintSharesWithFlashLoanCollateral(uint256 sharesToMint) external returns (uint256) {
         (uint256 netWstEth, uint256 flashAmount) = _previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
-        _startFlashLoan(flashAmount, abi.encode(msg.sender, sharesToMint, netWstEth));
+        _startFlashLoan(flashAmount, abi.encode(FlashLoanType.DEPOSIT, msg.sender, sharesToMint, netWstEth));
+
+        return netWstEth;
+    }
+
+    function burnSharesWithCurveAndFlashLoan(uint256 sharesToBurn, uint256 minWeth) external returns (uint256) {
+        (uint256 expectedWEth, uint256 flashAmount, uint256 stEthToSwap) =
+            _previewBurnSharesWithCurveAndFlashLoan(sharesToBurn);
+
+        require(expectedWEth >= minWeth, SlippageExceeded(expectedWEth, minWeth));
+
+        _startFlashLoan(
+            flashAmount, abi.encode(FlashLoanType.WITHDRAW_CURVE, msg.sender, sharesToBurn, stEthToSwap, expectedWEth)
+        );
+
+        return expectedWEth;
     }
 
     receive() external payable {}
@@ -54,9 +80,18 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         require(msg.sender == address(BALANCER_VAULT), UnauthorizedFlashLoan());
         require(address(tokens[0]) == address(WETH) && feeAmounts[0] == 0, InvalidFlashLoanParams());
 
-        uint256 flashAmount = amounts[0];
-        (address user, uint256 sharesToMint, uint256 assetsCollateral) =
-            abi.decode(userData, (address, uint256, uint256));
+        FlashLoanType flashLoanType = abi.decode(userData, (FlashLoanType));
+
+        if (flashLoanType == FlashLoanType.DEPOSIT) {
+            _handleDeposit(userData, amounts[0]);
+        } else if (flashLoanType == FlashLoanType.WITHDRAW_CURVE) {
+            _handleWithdrawCurve(userData, amounts[0]);
+        }
+    }
+
+    function _handleDeposit(bytes memory userData, uint256 flashAmount) internal {
+        (, address user, uint256 sharesToMint, uint256 assetsCollateral) =
+            abi.decode(userData, (FlashLoanType, address, uint256, uint256));
 
         WETH.withdraw(flashAmount);
         uint256 collateralFromFlash = STETH.submit{value: flashAmount}(address(0));
@@ -75,6 +110,28 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         LTV_VAULT.safeTransfer(user, sharesToMint);
 
         emit SharesMinted(user, sharesToMint);
+    }
+
+    function _handleWithdrawCurve(bytes memory userData, uint256 flashAmount) internal {
+        (, address user, uint256 sharesToBurn, uint256 collateralToSwap, uint256 expectedWEth) =
+            abi.decode(userData, (FlashLoanType, address, uint256, uint256, uint256));
+
+        LTV_VAULT.safeTransferFrom(user, address(this), sharesToBurn);
+        WETH.forceApprove(address(LTV_VAULT), flashAmount);
+        // shares to burn are not expected to exceed int256 max value
+        // forge-lint: disable-next-line(unsafe-typecast)
+        LTV_VAULT.executeLowLevelRebalanceShares(-int256(sharesToBurn));
+
+        uint256 stEthToSwap = WSTETH.unwrap(collateralToSwap);
+        STETH.forceApprove(address(CURVE), stEthToSwap);
+        CURVE.exchange(1, 0, stEthToSwap, 0);
+
+        WETH.deposit{value: expectedWEth + flashAmount}();
+
+        WETH.safeTransfer(user, expectedWEth);
+        WETH.safeTransfer(address(BALANCER_VAULT), flashAmount);
+
+        emit SharesBurned(user, sharesToBurn);
     }
 
     function _startFlashLoan(uint256 flashAmount, bytes memory data) internal {
@@ -101,6 +158,26 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         // forge-lint: disable-end(unsafe-typecast)
 
         return (assetsCollateral, flashAmount);
+    }
+
+    function _previewBurnSharesWithCurveAndFlashLoan(uint256 sharesToBurn)
+        internal
+        view
+        returns (uint256, uint256, uint256)
+    {
+        // shares to burn are not expected to exceed int256 max value
+        // forge-lint: disable-next-line(unsafe-typecast)
+        (int256 deltaCollateral, int256 deltaBorrow) = LTV_VAULT.previewLowLevelRebalanceShares(-int256(sharesToBurn));
+        require(deltaCollateral <= 0 && deltaBorrow <= 0, InvalidRebalanceMode());
+
+        // forge-lint: disable-next-line(unsafe-typecast)
+        uint256 stEthAmount = STETH.getPooledEthByShares(uint256(-deltaCollateral));
+
+        uint256 eth = CURVE.get_dy(1, 0, stEthAmount);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        require(eth >= uint256(-deltaBorrow), SlippageExceeded(eth, uint256(-deltaBorrow)));
+        // forge-lint: disable-next-line(unsafe-typecast)
+        return (eth - uint256(-deltaBorrow), uint256(-deltaBorrow), uint256(-deltaCollateral));
     }
 
     function _wrapShares(uint256 shares) internal {

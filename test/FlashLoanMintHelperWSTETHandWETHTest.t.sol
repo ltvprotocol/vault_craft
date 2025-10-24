@@ -17,14 +17,16 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
     address public user;
 
     function setUp() public {
-        vm.createSelectFork(vm.envString("RPC_MAINNET"));
+        vm.createSelectFork(vm.envString("RPC_MAINNET"), 23648678);
         user = makeAddr("user");
 
         vault = new MockLowLevelVault(WSTETH, WETH);
         helper = new FlashLoanMintHelperWSTETHandWETH{salt: bytes32(0)}(address(vault));
 
-        deal(WETH, address(vault), 100000000 ether);
-        deal(WSTETH, user, 100000000 ether);
+        deal(WETH, address(vault), 1000000 ether);
+        deal(WSTETH, address(vault), 1000000 ether);
+        deal(WSTETH, user, 1000000 ether);
+        deal(WETH, user, 1000000 ether);
     }
 
     function test_MintSmallAmount() public {
@@ -218,5 +220,27 @@ contract FlashLoanMintHelperWSTETHandWETHTest is Test {
         vm.expectRevert();
         helper.mintSharesWithFlashLoanCollateral(sharesToMint);
         vm.stopPrank();
+    }
+
+    function test_previewBurnSharesWithCurveAndFlashLoan() public view {
+        uint256 sharesToBurn = 10 ether;
+        uint256 expectedWEth = helper.previewBurnSharesWithCurveAndFlashLoan(sharesToBurn);
+
+        assertEq(expectedWEth, 9987671844167849941);
+    }
+
+    function test_burnSharesWithCurveAndFlashLoan() public {
+        vault._mint(user, 10 ether);
+        uint256 sharesToBurn = 10 ether;
+
+        vm.startPrank(user);
+
+        uint256 balanceBefore = IERC20(WETH).balanceOf(user);
+
+        vault.approve(address(helper), sharesToBurn);
+        uint256 expectedWEth = helper.burnSharesWithCurveAndFlashLoan(sharesToBurn, 9987671844167849941);
+
+        assertEq(expectedWEth, 9987671844167849941);
+        assertEq(IERC20(WETH).balanceOf(user) - balanceBefore, 9987671844167849941);
     }
 }
