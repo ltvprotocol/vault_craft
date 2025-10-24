@@ -5,7 +5,6 @@ import {IERC4626Collateral} from "./interfaces/IERC4626Collateral.sol";
 
 contract Safe4626CollateralHelper {
     error SlippageExceeded(uint256 expected, uint256 actual, uint256 minRequired);
-    error InsufficientBalance(uint256 required, uint256 available);
     error InvalidVault(address vault);
 
     function safeDepositCollateral(IERC4626Collateral vault, uint256 assets, address receiver, uint256 minSharesOut)
