@@ -29,7 +29,11 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         LTV_VAULT = ILowLevelVault(_ltvVault);
     }
 
-    function previewMintSharesWithFlashLoanCollateral(uint256 sharesToMint) public view returns (uint256 assetsCollateral) {
+    function previewMintSharesWithFlashLoanCollateral(uint256 sharesToMint)
+        public
+        view
+        returns (uint256 assetsCollateral)
+    {
         (assetsCollateral,) = _previewMintSharesWithFlashLoanCollateral(sharesToMint);
     }
 
@@ -40,7 +44,7 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
     }
 
     receive() external payable {}
-    
+
     function receiveFlashLoan(
         IERC20[] memory tokens,
         uint256[] memory amounts,
