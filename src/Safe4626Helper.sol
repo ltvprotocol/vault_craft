@@ -11,6 +11,8 @@ contract Safe4626Helper {
         external
         returns (uint256 shares)
     {
+        require(address(vault) != address(0), InvalidVault(address(vault)));
+
         try vault.deposit(assets, receiver) returns (uint256 returnedShares) {
             shares = returnedShares;
             require((shares >= minSharesOut), SlippageExceeded(shares));
@@ -23,6 +25,8 @@ contract Safe4626Helper {
         external
         returns (uint256 assets)
     {
+        require(address(vault) != address(0), InvalidVault(address(vault)));
+
         try vault.mint(shares, receiver) returns (uint256 returnedAssets) {
             assets = returnedAssets;
             require((assets <= maxAssetsIn), SlippageExceeded(assets));
@@ -35,6 +39,8 @@ contract Safe4626Helper {
         external
         returns (uint256 shares)
     {
+        require(address(vault) != address(0), InvalidVault(address(vault)));
+
         try vault.withdraw(assets, receiver, owner) returns (uint256 returnedShares) {
             shares = returnedShares;
             require((shares <= maxSharesOut), SlippageExceeded(shares));
@@ -47,6 +53,8 @@ contract Safe4626Helper {
         external
         returns (uint256 assets)
     {
+        require(address(vault) != address(0), InvalidVault(address(vault)));
+
         try vault.redeem(shares, receiver, owner) returns (uint256 returnedAssets) {
             assets = returnedAssets;
             require((assets >= minAssetsOut), SlippageExceeded(assets));
