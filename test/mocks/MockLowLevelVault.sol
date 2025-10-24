@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILowLevelVault} from "src/interfaces/ILowLevelVault.sol";
 
+// forge-lint: disable-start
 contract MockLowLevelVault is ILowLevelVault {
     IERC20 immutable collateralToken;
     IERC20 immutable borrowToken;
@@ -90,3 +91,5 @@ contract MockLowLevelVault is ILowLevelVault {
         emit Transfer(address(0), to, amount);
     }
 }
+
+// forge-lint: disable-end
