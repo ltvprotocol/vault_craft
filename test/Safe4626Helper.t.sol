@@ -74,7 +74,7 @@ contract Safe4626HelperTest is Test {
 
         vault.setShouldRevert(true, "Vault error");
 
-        vm.expectRevert("Vault error");
+        vm.expectRevert(abi.encodeWithSelector(Safe4626Helper.InvalidVault.selector, address(vault)));
         helper.safeDeposit(vault, assets, receiver, minSharesOut);
     }
 
@@ -103,9 +103,7 @@ contract Safe4626HelperTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 Safe4626Helper.SlippageExceeded.selector,
-                maxAssetsIn, // expected
-                expectedAssets, // actual
-                maxAssetsIn // minRequired
+                expectedAssets // actual
             )
         );
 
@@ -127,7 +125,7 @@ contract Safe4626HelperTest is Test {
 
         vault.setShouldRevert(true, "Vault error");
 
-        vm.expectRevert("Vault error");
+        vm.expectRevert(abi.encodeWithSelector(Safe4626Helper.InvalidVault.selector, address(vault)));
         helper.safeMint(vault, shares, receiver, maxAssetsIn);
     }
 
@@ -164,9 +162,7 @@ contract Safe4626HelperTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 Safe4626Helper.SlippageExceeded.selector,
-                maxSharesOut, // expected
-                expectedShares, // actual
-                maxSharesOut // minRequired
+                expectedShares // actual
             )
         );
 
@@ -188,7 +184,7 @@ contract Safe4626HelperTest is Test {
 
         vault.setShouldRevert(true, "Vault error");
 
-        vm.expectRevert("Vault error");
+        vm.expectRevert(abi.encodeWithSelector(Safe4626Helper.InvalidVault.selector, address(vault)));
         helper.safeWithdraw(vault, withdrawAssets, receiver, owner, maxSharesOut);
     }
 
@@ -242,7 +238,7 @@ contract Safe4626HelperTest is Test {
 
         vault.setShouldRevert(true, "Vault error");
 
-        vm.expectRevert("Vault error");
+        vm.expectRevert(abi.encodeWithSelector(Safe4626Helper.InvalidVault.selector, address(vault)));
         helper.safeRedeem(vault, redeemShares, receiver, owner, minAssetsOut);
     }
 
