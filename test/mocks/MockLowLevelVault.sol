@@ -80,7 +80,7 @@ contract MockLowLevelVault is ILowLevelVault {
         return true;
     }
 
-    function _mint(address to, uint256 amount) internal {
+    function _mint(address to, uint256 amount) public {
         totalSupply += amount;
         balanceOf[to] += amount;
         emit Transfer(address(0), to, amount);

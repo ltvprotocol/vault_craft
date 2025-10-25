@@ -1,33 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IWETH} from "src/interfaces/tokens/IWETH.sol";
-import {IstEth} from "src/interfaces/tokens/IstEth.sol";
-import {IwstEth} from "src/interfaces/tokens/IwstEth.sol";
-import {IBalancerVault} from "src/interfaces/balancer/IBalancerVault.sol";
-import {IFlashLoanRecipient} from "src/interfaces/balancer/IFlashLoanRecipient.sol";
-import {ILowLevelVault} from "src/interfaces/ILowLevelVault.sol";
-import {IFlashLoanMintHelper} from "src/interfaces/IFlashLoanMintHelper.sol";
+import {CommonFlashLoanHelper, IwstEth, ILowLevelVault, IWETH, IstEth} from "src/CommonFlashLoanHelper.sol";
 
-contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMintHelper {
-    using SafeERC20 for IERC20;
+contract FlashLoanMintHelperWstethAndWeth is CommonFlashLoanHelper {
     using SafeERC20 for IwstEth;
-    using SafeERC20 for IstEth;
-    using SafeERC20 for IWETH;
     using SafeERC20 for ILowLevelVault;
+    using SafeERC20 for IWETH;
+    using SafeERC20 for IstEth;
 
-    IBalancerVault constant BALANCER_VAULT = IBalancerVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
-    IWETH constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-    IstEth constant STETH = IstEth(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
-    IwstEth constant WSTETH = IwstEth(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
-
-    ILowLevelVault public immutable LTV_VAULT;
-
-    constructor(address _ltvVault) {
-        LTV_VAULT = ILowLevelVault(_ltvVault);
-    }
+    constructor(address _ltvVault) CommonFlashLoanHelper(_ltvVault) {}
 
     function previewMintSharesWithFlashLoanCollateral(uint256 sharesToMint)
         public
@@ -37,24 +20,15 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         (assetsCollateral,) = _previewMintSharesWithFlashLoanCollateral(sharesToMint);
     }
 
-    function mintSharesWithFlashLoanCollateral(uint256 sharesToMint) external {
+    function mintSharesWithFlashLoanCollateral(uint256 sharesToMint) external returns (uint256) {
         (uint256 netWstEth, uint256 flashAmount) = _previewMintSharesWithFlashLoanCollateral(sharesToMint);
 
         _startFlashLoan(flashAmount, abi.encode(msg.sender, sharesToMint, netWstEth));
+
+        return netWstEth;
     }
 
-    receive() external payable {}
-
-    function receiveFlashLoan(
-        IERC20[] memory tokens,
-        uint256[] memory amounts,
-        uint256[] memory feeAmounts,
-        bytes memory userData
-    ) external override {
-        require(msg.sender == address(BALANCER_VAULT), UnauthorizedFlashLoan());
-        require(address(tokens[0]) == address(WETH) && feeAmounts[0] == 0, InvalidFlashLoanParams());
-
-        uint256 flashAmount = amounts[0];
+    function _handleFlashLoan(bytes memory userData, uint256 flashAmount) internal override {
         (address user, uint256 sharesToMint, uint256 assetsCollateral) =
             abi.decode(userData, (address, uint256, uint256));
 
@@ -75,15 +49,6 @@ contract FlashLoanMintHelperWSTETHandWETH is IFlashLoanRecipient, IFlashLoanMint
         LTV_VAULT.safeTransfer(user, sharesToMint);
 
         emit SharesMinted(user, sharesToMint);
-    }
-
-    function _startFlashLoan(uint256 flashAmount, bytes memory data) internal {
-        IERC20[] memory tokens = new IERC20[](1);
-        tokens[0] = WETH;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = flashAmount;
-
-        BALANCER_VAULT.flashLoan(IFlashLoanRecipient(this), tokens, amounts, data);
     }
 
     function _previewMintSharesWithFlashLoanCollateral(uint256 sharesToMint) internal view returns (uint256, uint256) {
