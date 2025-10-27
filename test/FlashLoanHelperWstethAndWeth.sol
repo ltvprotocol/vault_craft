@@ -4,12 +4,12 @@ pragma solidity ^0.8.28;
 import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {FlashLoanMintHelperWstethAndWeth} from "src/FlashLoanMintHelperWstethAndWeth.sol";
-import {FlashLoanBurnHelperWstethAndWeth} from "src/FlashLoanBurnHelperWstethAndWeth.sol";
+import {FlashLoanRedeemHelperWstethAndWeth} from "src/FlashLoanRedeemHelperWstethAndWeth.sol";
 import {MockLowLevelVault} from "test/mocks/MockLowLevelVault.sol";
 
 contract FlashLoanHelperWstethAndWethTest is Test {
     FlashLoanMintHelperWstethAndWeth public helper;
-    FlashLoanBurnHelperWstethAndWeth public helperBurn;
+    FlashLoanRedeemHelperWstethAndWeth public helperRedeem;
     MockLowLevelVault public vault;
 
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -24,7 +24,7 @@ contract FlashLoanHelperWstethAndWethTest is Test {
 
         vault = new MockLowLevelVault(WSTETH, WETH);
         helper = new FlashLoanMintHelperWstethAndWeth{salt: bytes32(0)}(address(vault));
-        helperBurn = new FlashLoanBurnHelperWstethAndWeth{salt: bytes32(0)}(address(vault));
+        helperRedeem = new FlashLoanRedeemHelperWstethAndWeth{salt: bytes32(0)}(address(vault));
 
         deal(WETH, address(vault), 1000000 ether);
         deal(WSTETH, address(vault), 1000000 ether);
@@ -225,39 +225,39 @@ contract FlashLoanHelperWstethAndWethTest is Test {
         vm.stopPrank();
     }
 
-    function test_previewBurnSharesWithCurveAndFlashLoanBorrow() public view {
-        uint256 sharesToBurn = 10 ether;
-        uint256 expectedWEth = helperBurn.previewBurnSharesWithCurveAndFlashLoanBorrow(sharesToBurn);
+    function test_previewRedeemSharesWithCurveAndFlashLoanBorrow() public view {
+        uint256 sharesToRedeem = 10 ether;
+        uint256 expectedWEth = helperRedeem.previewRedeemSharesWithCurveAndFlashLoanBorrow(sharesToRedeem);
 
         assertEq(expectedWEth, 9987671844167849941);
     }
 
-    function test_burnSharesWithCurveAndFlashLoanBorrow() public {
+    function test_redeemSharesWithCurveAndFlashLoanBorrow() public {
         vault._mint(user, 10 ether);
-        uint256 sharesToBurn = 10 ether;
+        uint256 sharesToRedeem = 10 ether;
 
         vm.startPrank(user);
 
         uint256 balanceBefore = IERC20(WETH).balanceOf(user);
 
-        vault.approve(address(helperBurn), sharesToBurn);
-        uint256 expectedWEth = helperBurn.burnSharesWithCurveAndFlashLoanBorrow(sharesToBurn, 9987671844167849941);
+        vault.approve(address(helperRedeem), sharesToRedeem);
+        uint256 expectedWEth = helperRedeem.redeemSharesWithCurveAndFlashLoanBorrow(sharesToRedeem, 9987671844167849941);
 
         assertEq(expectedWEth, 9987671844167849941);
         assertEq(IERC20(WETH).balanceOf(user) - balanceBefore, 9987671844167849941);
     }
 
-    function test_burnSharesWithCurveAndFlashLoanBorrowRandomNumber() public {
+    function test_redeemSharesWithCurveAndFlashLoanBorrowRandomNumber() public {
         uint256 randomNumber = 324967052170187234589;
         vault._mint(user, randomNumber);
-        uint256 sharesToBurn = randomNumber;
+        uint256 sharesToRedeem = randomNumber;
 
         vm.startPrank(user);
 
         uint256 balanceBefore = IERC20(WETH).balanceOf(user);
 
-        vault.approve(address(helperBurn), sharesToBurn);
-        uint256 expectedWEth = helperBurn.burnSharesWithCurveAndFlashLoanBorrow(sharesToBurn, 324482386022157061368);
+        vault.approve(address(helperRedeem), sharesToRedeem);
+        uint256 expectedWEth = helperRedeem.redeemSharesWithCurveAndFlashLoanBorrow(sharesToRedeem, 324482386022157061368);
 
         assertEq(expectedWEth, 324482386022157061368);
         assertEq(IERC20(WETH).balanceOf(user) - balanceBefore, 324482386022157061368);
