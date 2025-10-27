@@ -33,4 +33,5 @@ jobs:
 
       - name: Run Forge tests
         run: forge test -vvv
-        env: RPC_MAINNET=${{ secrets.RPC_MAINNET }}
+        env:
+          RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
