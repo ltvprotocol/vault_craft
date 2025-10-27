@@ -37,7 +37,7 @@ interface IERC4626 is IERC20 {
     /// @notice Emitted when `sender` deposits `assets` and receives `shares` for `owner`.
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
 
-    /// @notice Emitted when `sender` withdraws `assets` for `receiver` by burning `shares` from `owner`.
+    /// @notice Emitted when `sender` withdraws `assets` for `receiver` by redeeming `shares` from `owner`.
     event Withdraw(
         address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
     );
@@ -102,11 +102,11 @@ interface IERC4626 is IERC20 {
     /// @dev MUST account for global/user limits. MUST NOT revert.
     function maxWithdraw(address owner) external view returns (uint256 maxAssets);
 
-    /// @notice Preview how many `shares` would be burned to withdraw `assets` right now.
+    /// @notice Preview how many `shares` would be redeemed to withdraw `assets` right now.
     /// @dev MUST include withdrawal fees. Ignores limits/allowances. See spec for rounding.
     function previewWithdraw(uint256 assets) external view returns (uint256 shares);
 
-    /// @notice Withdraw exactly `assets` to `receiver`, burning `shares` from `owner`.
+    /// @notice Withdraw exactly `assets` to `receiver`, redeeming `shares` from `owner`.
     /// @dev MUST emit {Withdraw}. MUST check allowance when `msg.sender` != `owner`.
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
 

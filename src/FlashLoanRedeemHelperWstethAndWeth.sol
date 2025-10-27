@@ -5,7 +5,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ICurve} from "src/interfaces/ICurve.sol";
 import {CommonFlashLoanHelper, IwstEth, ILowLevelVault, IWETH, IstEth} from "src/CommonFlashLoanHelper.sol";
 
-contract FlashLoanBurnHelperWstethAndWeth is CommonFlashLoanHelper {
+contract FlashLoanRedeemHelperWstethAndWeth is CommonFlashLoanHelper {
     using SafeERC20 for IwstEth;
     using SafeERC20 for ILowLevelVault;
     using SafeERC20 for IWETH;
@@ -15,34 +15,37 @@ contract FlashLoanBurnHelperWstethAndWeth is CommonFlashLoanHelper {
 
     constructor(address _ltvVault) CommonFlashLoanHelper(_ltvVault) {}
 
-    function previewBurnSharesWithCurveAndFlashLoanBorrow(uint256 sharesToBurn)
+    function previewRedeemSharesWithCurveAndFlashLoanBorrow(uint256 sharesToRedeem)
         public
         view
         returns (uint256 expectedWEth)
     {
-        (expectedWEth,,) = _previewBurnSharesWithCurveAndFlashLoanBorrow(sharesToBurn);
+        (expectedWEth,,) = _previewRedeemSharesWithCurveAndFlashLoanBorrow(sharesToRedeem);
     }
 
-    function burnSharesWithCurveAndFlashLoanBorrow(uint256 sharesToBurn, uint256 minWeth) external returns (uint256) {
+    function redeemSharesWithCurveAndFlashLoanBorrow(uint256 sharesToRedeem, uint256 minWeth)
+        external
+        returns (uint256)
+    {
         (uint256 expectedWEth, uint256 flashAmount, uint256 stEthToSwap) =
-            _previewBurnSharesWithCurveAndFlashLoanBorrow(sharesToBurn);
+            _previewRedeemSharesWithCurveAndFlashLoanBorrow(sharesToRedeem);
 
         require(expectedWEth >= minWeth, SlippageExceeded(expectedWEth, minWeth));
 
-        _startFlashLoan(flashAmount, abi.encode(msg.sender, sharesToBurn, stEthToSwap, expectedWEth));
+        _startFlashLoan(flashAmount, abi.encode(msg.sender, sharesToRedeem, stEthToSwap, expectedWEth));
 
         return expectedWEth;
     }
 
     function _handleFlashLoan(bytes memory userData, uint256 flashAmount) internal override {
-        (address user, uint256 sharesToBurn, uint256 collateralToSwap, uint256 expectedWEth) =
+        (address user, uint256 sharesToRedeem, uint256 collateralToSwap, uint256 expectedWEth) =
             abi.decode(userData, (address, uint256, uint256, uint256));
 
-        LTV_VAULT.safeTransferFrom(user, address(this), sharesToBurn);
+        LTV_VAULT.safeTransferFrom(user, address(this), sharesToRedeem);
         WETH.forceApprove(address(LTV_VAULT), flashAmount);
-        // shares to burn are not expected to exceed int256 max value
+        // shares to redeem are not expected to exceed int256 max value
         // forge-lint: disable-next-line(unsafe-typecast)
-        LTV_VAULT.executeLowLevelRebalanceShares(-int256(sharesToBurn));
+        LTV_VAULT.executeLowLevelRebalanceShares(-int256(sharesToRedeem));
 
         uint256 stEthToSwap = WSTETH.unwrap(collateralToSwap);
         STETH.forceApprove(address(CURVE), stEthToSwap);
@@ -53,17 +56,17 @@ contract FlashLoanBurnHelperWstethAndWeth is CommonFlashLoanHelper {
         WETH.safeTransfer(user, expectedWEth);
         WETH.safeTransfer(address(BALANCER_VAULT), flashAmount);
 
-        emit SharesBurned(user, sharesToBurn);
+        emit SharesRedeemed(user, sharesToRedeem);
     }
 
-    function _previewBurnSharesWithCurveAndFlashLoanBorrow(uint256 sharesToBurn)
+    function _previewRedeemSharesWithCurveAndFlashLoanBorrow(uint256 sharesToRedeem)
         internal
         view
         returns (uint256, uint256, uint256)
     {
-        // shares to burn are not expected to exceed int256 max value
+        // shares to redeem are not expected to exceed int256 max value
         // forge-lint: disable-next-line(unsafe-typecast)
-        (int256 deltaCollateral, int256 deltaBorrow) = LTV_VAULT.previewLowLevelRebalanceShares(-int256(sharesToBurn));
+        (int256 deltaCollateral, int256 deltaBorrow) = LTV_VAULT.previewLowLevelRebalanceShares(-int256(sharesToRedeem));
         require(deltaCollateral <= 0 && deltaBorrow <= 0, InvalidRebalanceMode());
 
         // forge-lint: disable-next-line(unsafe-typecast)
