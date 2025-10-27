@@ -257,7 +257,8 @@ contract FlashLoanHelperWstethAndWethTest is Test {
         uint256 balanceBefore = IERC20(WETH).balanceOf(user);
 
         vault.approve(address(helperRedeem), sharesToRedeem);
-        uint256 expectedWEth = helperRedeem.redeemSharesWithCurveAndFlashLoanBorrow(sharesToRedeem, 324482386022157061368);
+        uint256 expectedWEth =
+            helperRedeem.redeemSharesWithCurveAndFlashLoanBorrow(sharesToRedeem, 324482386022157061368);
 
         assertEq(expectedWEth, 324482386022157061368);
         assertEq(IERC20(WETH).balanceOf(user) - balanceBefore, 324482386022157061368);

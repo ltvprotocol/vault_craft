@@ -23,7 +23,10 @@ contract FlashLoanRedeemHelperWstethAndWeth is CommonFlashLoanHelper {
         (expectedWEth,,) = _previewRedeemSharesWithCurveAndFlashLoanBorrow(sharesToRedeem);
     }
 
-    function redeemSharesWithCurveAndFlashLoanBorrow(uint256 sharesToRedeem, uint256 minWeth) external returns (uint256) {
+    function redeemSharesWithCurveAndFlashLoanBorrow(uint256 sharesToRedeem, uint256 minWeth)
+        external
+        returns (uint256)
+    {
         (uint256 expectedWEth, uint256 flashAmount, uint256 stEthToSwap) =
             _previewRedeemSharesWithCurveAndFlashLoanBorrow(sharesToRedeem);
 
