@@ -33,8 +33,8 @@ contract Safe4626Helper {
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        assets = vault.previewMint(shares);
         try vault.asset() returns (address asset) {
+            assets = vault.previewMint(shares);
             IERC20(asset).safeTransferFrom(msg.sender, address(this), assets);
             IERC20(asset).forceApprove(address(vault), assets);
         } catch {
@@ -44,23 +44,23 @@ contract Safe4626Helper {
         require(assets <= maxAssetsIn, SlippageExceeded(assets));
     }
 
-    function safeWithdraw(IERC4626 vault, uint256 assets, address receiver, address owner, uint256 maxSharesOut)
+    function safeWithdraw(IERC4626 vault, uint256 assets, address receiver, uint256 maxSharesOut)
         external
         returns (uint256 shares)
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        shares = vault.withdraw(assets, receiver, owner);
+        shares = vault.withdraw(assets, receiver, msg.sender);
         require(shares <= maxSharesOut, SlippageExceeded(shares));
     }
 
-    function safeRedeem(IERC4626 vault, uint256 shares, address receiver, address owner, uint256 minAssetsOut)
+    function safeRedeem(IERC4626 vault, uint256 shares, address receiver, uint256 minAssetsOut)
         external
         returns (uint256 assets)
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        assets = vault.redeem(shares, receiver, owner);
+        assets = vault.redeem(shares, receiver, msg.sender);
         require(assets >= minAssetsOut, SlippageExceeded(assets));
     }
 }
