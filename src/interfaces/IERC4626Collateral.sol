@@ -31,4 +31,6 @@ interface IERC4626Collateral {
     function previewRedeemCollateral(uint256 shares) external view returns (uint256 assets);
 
     function redeemCollateral(uint256 shares, address receiver, address owner) external returns (uint256 assets);
+
+    function assetCollateral() external view returns (address);
 }

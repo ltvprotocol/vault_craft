@@ -2,34 +2,39 @@
 pragma solidity ^0.8.20;
 
 import {IERC4626Collateral} from "../../src/interfaces/IERC4626Collateral.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract MockERC4626CollateralVault is IERC4626Collateral {
-    uint256 public totalAssetsAmount;
-    uint256 public totalSharesAmount;
-    uint256 public exchangeRate = 1e18; // 1:1 by default
-    bool public shouldRevert;
-    string public revertReason;
+    using SafeERC20 for IERC20;
 
-    mapping(address => uint256) public balanceOf;
+    IERC20 public immutable ASSET_TOKEN;
+    uint256 private _totalShares;
+    uint256 private _totalAssets;
 
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    mapping(address => uint256) private _balances;
 
-    function setExchangeRate(uint256 _rate) external {
-        exchangeRate = _rate;
+    constructor(address _asset) {
+        ASSET_TOKEN = IERC20(_asset);
     }
 
-    function setShouldRevert(bool _shouldRevert, string calldata _reason) external {
-        shouldRevert = _shouldRevert;
-        revertReason = _reason;
+    // ERC4626Collateral
+    function assetCollateral() external view returns (address) {
+        return address(ASSET_TOKEN);
+    }
+
+    function totalAssets() public view returns (uint256) {
+        return _totalAssets;
     }
 
     function convertToShares(uint256 assets) public view returns (uint256) {
-        return (assets * 1e18) / exchangeRate;
+        if (_totalAssets == 0) return assets;
+        return (assets * _totalShares) / _totalAssets;
     }
 
     function convertToAssets(uint256 shares) public view returns (uint256) {
-        return (shares * exchangeRate) / 1e18;
+        if (_totalShares == 0) return shares;
+        return (shares * _totalAssets) / _totalShares;
     }
 
     function maxDepositCollateral(address) external pure returns (uint256) {
@@ -37,22 +42,15 @@ contract MockERC4626CollateralVault is IERC4626Collateral {
     }
 
     function previewDepositCollateral(uint256 assets) external view returns (uint256) {
-        if (shouldRevert) revert(revertReason);
         return convertToShares(assets);
     }
 
-    function depositCollateral(uint256 assets, address receiver) external returns (uint256) {
-        if (shouldRevert) revert(revertReason);
-
-        uint256 shares = convertToShares(assets);
-        totalAssetsAmount += assets;
-        totalSharesAmount += shares;
-        balanceOf[receiver] += shares;
-
+    function depositCollateral(uint256 assets, address receiver) external returns (uint256 shares) {
+        shares = convertToShares(assets);
+        ASSET_TOKEN.safeTransferFrom(msg.sender, address(this), assets);
+        _mint(receiver, shares);
+        _totalAssets += assets;
         emit Deposit(msg.sender, receiver, assets, shares);
-        emit Transfer(address(0), receiver, shares);
-
-        return shares;
     }
 
     function maxMintCollateral(address) external pure returns (uint256) {
@@ -60,71 +58,72 @@ contract MockERC4626CollateralVault is IERC4626Collateral {
     }
 
     function previewMintCollateral(uint256 shares) external view returns (uint256) {
-        if (shouldRevert) revert(revertReason);
         return convertToAssets(shares);
     }
 
-    function mintCollateral(uint256 shares, address receiver) external returns (uint256) {
-        if (shouldRevert) revert(revertReason);
-
-        uint256 assets = convertToAssets(shares);
-        totalAssetsAmount += assets;
-        totalSharesAmount += shares;
-        balanceOf[receiver] += shares;
-
+    function mintCollateral(uint256 shares, address receiver) external returns (uint256 assets) {
+        assets = convertToAssets(shares);
+        ASSET_TOKEN.safeTransferFrom(msg.sender, address(this), assets);
+        _mint(receiver, shares);
+        _totalAssets += assets;
         emit Deposit(msg.sender, receiver, assets, shares);
-        emit Transfer(address(0), receiver, shares);
-
-        return assets;
     }
 
     function maxWithdrawCollateral(address owner) external view returns (uint256) {
-        return convertToAssets(balanceOf[owner]);
+        return convertToAssets(_balances[owner]);
     }
 
     function previewWithdrawCollateral(uint256 assets) external view returns (uint256) {
-        if (shouldRevert) revert(revertReason);
         return convertToShares(assets);
     }
 
-    function withdrawCollateral(uint256 assets, address receiver, address owner) external returns (uint256) {
-        if (shouldRevert) revert(revertReason);
-
-        uint256 shares = convertToShares(assets);
-        require(balanceOf[owner] >= shares, "Insufficient shares");
-
-        balanceOf[owner] -= shares;
-        totalSharesAmount -= shares;
-        totalAssetsAmount -= assets;
-
+    function withdrawCollateral(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
+        shares = convertToShares(assets);
+        require(_balances[owner] >= shares, "Insufficient shares");
+        _burn(owner, shares);
+        _totalAssets -= assets;
+        ASSET_TOKEN.safeTransfer(receiver, assets);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
-        emit Transfer(owner, address(0), shares);
-
-        return shares;
     }
 
     function maxRedeemCollateral(address owner) external view returns (uint256) {
-        return balanceOf[owner];
+        return _balances[owner];
     }
 
     function previewRedeemCollateral(uint256 shares) external view returns (uint256) {
-        if (shouldRevert) revert(revertReason);
         return convertToAssets(shares);
     }
 
-    function redeemCollateral(uint256 shares, address receiver, address owner) external returns (uint256) {
-        if (shouldRevert) revert(revertReason);
-
-        require(balanceOf[owner] >= shares, "Insufficient shares");
-
-        uint256 assets = convertToAssets(shares);
-        balanceOf[owner] -= shares;
-        totalSharesAmount -= shares;
-        totalAssetsAmount -= assets;
-
+    function redeemCollateral(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
+        require(_balances[owner] >= shares, "Insufficient shares");
+        assets = convertToAssets(shares);
+        _burn(owner, shares);
+        _totalAssets -= assets;
+        ASSET_TOKEN.safeTransfer(receiver, assets);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
-        emit Transfer(owner, address(0), shares);
+    }
 
-        return assets;
+    // Helpers
+    function balanceOf(address account) external view returns (uint256) {
+        return _balances[account];
+    }
+
+    // Internal
+    function _mint(address to, uint256 value) internal {
+        _totalShares += value;
+        _balances[to] += value;
+        emit Transfer(address(0), to, value);
+    }
+
+    function _burn(address from, uint256 value) internal {
+        _balances[from] -= value;
+        _totalShares -= value;
+        emit Transfer(from, address(0), value);
+    }
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    function mintFreeTokens(address to, uint256 value) external {
+        _mint(to, value);
     }
 }

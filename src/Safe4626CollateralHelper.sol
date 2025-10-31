@@ -17,9 +17,9 @@ contract Safe4626CollateralHelper {
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        try vault.assetCollateral() returns (IERC20 asset) {
-            asset.safeTransferFrom(msg.sender, address(this), assets);
-            asset.safeApprove(address(vault), assets);
+        try vault.assetCollateral() returns (address asset) {
+            IERC20(asset).safeTransferFrom(msg.sender, address(this), assets);
+            IERC20(asset).forceApprove(address(vault), assets);
         } catch {
             revert InvalidVault(address(vault));
         }
@@ -33,10 +33,10 @@ contract Safe4626CollateralHelper {
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        uint256 assets = vault.previewMintCollateral(shares);
-        try vault.assetCollateral() returns (IERC20 asset) {
-            asset.safeTransferFrom(msg.sender, address(this), assets);
-            asset.safeApprove(address(vault), assets);
+        assets = vault.previewMintCollateral(shares);
+        try vault.assetCollateral() returns (address asset) {
+            IERC20(asset).safeTransferFrom(msg.sender, address(this), assets);
+            IERC20(asset).forceApprove(address(vault), assets);
         } catch {
             revert InvalidVault(address(vault));
         }
