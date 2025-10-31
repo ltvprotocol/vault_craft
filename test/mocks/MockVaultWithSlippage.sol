@@ -5,18 +5,19 @@ import {IERC4626} from "src/interfaces/IERC4626.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-// Standard ERC4626 mock vault
-contract MockERC4626Vault is IERC4626 {
+// Mock vault that returns fewer shares (simulating slippage)
+contract MockVaultWithSlippage is IERC4626 {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable ASSET_TOKEN;
     uint256 private _totalShares;
     uint256 private _totalAssets;
+    uint256 public constant slippagePercent = 10;  // 10% slippage
 
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    string public name = "Mock ERC4626 Vault";
+    string public name = "Mock Vault With Slippage";
     string public symbol = "MOCK";
     uint8 public decimals = 18;
 
@@ -78,11 +79,14 @@ contract MockERC4626Vault is IERC4626 {
     }
 
     function previewDeposit(uint256 assets) external view returns (uint256) {
+        // Preview shows normal shares (no slippage in preview)
         return convertToShares(assets);
     }
 
     function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
         shares = convertToShares(assets);
+        // Apply 10% slippage - return fewer shares than expected
+        shares = shares * (100 - slippagePercent) / 100;
         ASSET_TOKEN.safeTransferFrom(msg.sender, address(this), assets);
         _mint(receiver, shares);
         _totalAssets += assets;
