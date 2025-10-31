@@ -78,4 +78,11 @@ contract FlashLoanRedeemHelperWstethAndWeth is CommonFlashLoanHelper {
         // forge-lint: disable-next-line(unsafe-typecast)
         return (eth - uint256(-deltaBorrow), uint256(-deltaBorrow), uint256(-deltaCollateral));
     }
+
+    function _checkUnauthorizedReceive() internal view virtual override {
+        if (msg.sender == address(CURVE)) {
+            return;
+        }
+        super._checkUnauthorizedReceive();
+    }
 }
