@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {IERC4626Collateral} from "../../src/interfaces/IERC4626Collateral.sol";
 
 contract MockERC4626CollateralVault is IERC4626Collateral {
+    address public assetCollateral;
     uint256 public totalAssetsAmount;
     uint256 public totalSharesAmount;
     uint256 public exchangeRate = 1e18; // 1:1 by default

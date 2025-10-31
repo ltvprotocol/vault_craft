@@ -33,9 +33,10 @@ contract FlashLoanMintHelperWstethAndWeth is CommonFlashLoanHelper {
             abi.decode(userData, (address, uint256, uint256));
 
         WETH.withdraw(flashAmount);
-        uint256 collateralFromFlash = STETH.submit{value: flashAmount}(address(0));
 
-        _wrapShares(collateralFromFlash);
+        uint256 collateralFromFlash = WSTETH.getWstETHByStETH(flashAmount);
+        (bool success,) = address(WSTETH).call{value: flashAmount}("");
+        require(success, FailedToWrapShares());
 
         WSTETH.safeTransferFrom(user, address(this), assetsCollateral);
 
@@ -66,13 +67,5 @@ contract FlashLoanMintHelperWstethAndWeth is CommonFlashLoanHelper {
         // forge-lint: disable-end(unsafe-typecast)
 
         return (assetsCollateral, flashAmount);
-    }
-
-    function _wrapShares(uint256 shares) internal {
-        uint256 totalShares = STETH.getTotalShares();
-        uint256 stEth = (shares * STETH.getTotalPooledEther() + totalShares - 1) / totalShares;
-
-        STETH.forceApprove(address(WSTETH), stEth);
-        require(WSTETH.wrap(stEth) == shares, FailedToWrapShares());
     }
 }
