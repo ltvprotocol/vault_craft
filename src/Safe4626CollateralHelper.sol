@@ -2,8 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {IERC4626Collateral} from "./interfaces/IERC4626Collateral.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract Safe4626CollateralHelper {
+    using SafeERC20 for IERC20;
+
     error SlippageExceeded(uint256 actual);
     error InvalidVault(address vault);
 
@@ -13,12 +17,14 @@ contract Safe4626CollateralHelper {
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        try vault.depositCollateral(assets, receiver) returns (uint256 returnedShares) {
-            shares = returnedShares;
-            require((shares >= minSharesOut), SlippageExceeded(shares));
+        try vault.assetCollateral() returns (IERC20 asset) {
+            asset.safeTransferFrom(msg.sender, address(this), assets);
+            asset.safeApprove(address(vault), assets);
         } catch {
             revert InvalidVault(address(vault));
         }
+        shares = vault.depositCollateral(assets, receiver);
+        require(shares >= minSharesOut, SlippageExceeded(shares));
     }
 
     function safeMintCollateral(IERC4626Collateral vault, uint256 shares, address receiver, uint256 maxAssetsIn)
@@ -27,12 +33,15 @@ contract Safe4626CollateralHelper {
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        try vault.mintCollateral(shares, receiver) returns (uint256 returnedAssets) {
-            assets = returnedAssets;
-            require((assets <= maxAssetsIn), SlippageExceeded(assets));
+        uint256 assets = vault.previewMintCollateral(shares);
+        try vault.assetCollateral() returns (IERC20 asset) {
+            asset.safeTransferFrom(msg.sender, address(this), assets);
+            asset.safeApprove(address(vault), assets);
         } catch {
             revert InvalidVault(address(vault));
         }
+        assets = vault.mintCollateral(shares, receiver);
+        require(assets <= maxAssetsIn, SlippageExceeded(assets));
     }
 
     function safeWithdrawCollateral(
@@ -44,12 +53,8 @@ contract Safe4626CollateralHelper {
     ) external returns (uint256 shares) {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        try vault.withdrawCollateral(assets, receiver, owner) returns (uint256 returnedShares) {
-            shares = returnedShares;
-            require((shares <= maxSharesIn), SlippageExceeded(shares));
-        } catch {
-            revert InvalidVault(address(vault));
-        }
+        shares = vault.withdrawCollateral(assets, receiver, owner);
+        require(shares <= maxSharesIn, SlippageExceeded(shares));
     }
 
     function safeRedeemCollateral(
@@ -61,11 +66,7 @@ contract Safe4626CollateralHelper {
     ) external returns (uint256 assets) {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        try vault.redeemCollateral(shares, receiver, owner) returns (uint256 returnedAssets) {
-            assets = returnedAssets;
-            require((assets >= minAssetsOut), SlippageExceeded(assets));
-        } catch {
-            revert InvalidVault(address(vault));
-        }
+        assets = vault.redeemCollateral(shares, receiver, owner);
+        require(assets >= minAssetsOut, SlippageExceeded(assets));
     }
 }
