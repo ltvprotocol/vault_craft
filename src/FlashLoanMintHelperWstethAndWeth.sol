@@ -34,9 +34,9 @@ contract FlashLoanMintHelperWstethAndWeth is CommonFlashLoanHelper {
 
         WETH.withdraw(flashAmount);
 
-
         uint256 collateralFromFlash = WSTETH.getWstETHByStETH(flashAmount);
-        address(WSTETH).call{value: flashAmount}("");
+        (bool success,) = address(WSTETH).call{value: flashAmount}("");
+        require(success, FailedToWrapShares());
 
         WSTETH.safeTransferFrom(user, address(this), assetsCollateral);
 

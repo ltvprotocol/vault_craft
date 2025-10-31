@@ -19,6 +19,8 @@ abstract contract CommonFlashLoanHelper is IFlashLoanHelperErrors, IFlashLoanHel
 
     ILowLevelVault public immutable LTV_VAULT;
 
+    error Unauthorized();
+
     constructor(address _ltvVault) {
         LTV_VAULT = ILowLevelVault(_ltvVault);
     }
@@ -44,9 +46,16 @@ abstract contract CommonFlashLoanHelper is IFlashLoanHelperErrors, IFlashLoanHel
         _handleFlashLoan(userData, amounts[0]);
     }
 
+    function _checkUnauthorizedReceive() internal view virtual {
+        if (msg.sender == address(WETH)) {
+            return;
+        }
+        revert Unauthorized();
+    }
+
+    receive() external payable {
+        _checkUnauthorizedReceive();
+    }
+
     function _handleFlashLoan(bytes memory userData, uint256 flashAmount) internal virtual;
-
-    receive() external payable {}
-
-    fallback() external payable {}
 }
