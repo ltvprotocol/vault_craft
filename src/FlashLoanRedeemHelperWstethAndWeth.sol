@@ -4,12 +4,15 @@ pragma solidity ^0.8.28;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ICurve} from "src/interfaces/ICurve.sol";
 import {CommonFlashLoanHelper, IwstEth, ILowLevelVault, IWETH, IstEth} from "src/CommonFlashLoanHelper.sol";
+import {IWhitelistRegistry} from "src/interfaces/IWhitelistRegistry.sol";
 
 contract FlashLoanRedeemHelperWstethAndWeth is CommonFlashLoanHelper {
     using SafeERC20 for IwstEth;
     using SafeERC20 for ILowLevelVault;
     using SafeERC20 for IWETH;
     using SafeERC20 for IstEth;
+
+    error TokenReceiverNotWhitelisted();
 
     ICurve constant CURVE = ICurve(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022);
 
@@ -53,6 +56,11 @@ contract FlashLoanRedeemHelperWstethAndWeth is CommonFlashLoanHelper {
 
         WETH.deposit{value: expectedWEth + flashAmount}();
 
+        require(
+            !LTV_VAULT.isWhitelistActivated()
+                || IWhitelistRegistry(LTV_VAULT.whitelistRegistry()).isAddressWhitelisted(user),
+            TokenReceiverNotWhitelisted()
+        );
         WETH.safeTransfer(user, expectedWEth);
         WETH.safeTransfer(address(BALANCER_VAULT), flashAmount);
 
