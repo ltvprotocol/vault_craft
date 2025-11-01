@@ -6,13 +6,13 @@ import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 
 /*
-forge script script/DeploySafe4626CollateralHelper.s.sol:DeploySafe4626CollateralHelper -f $RPC_URL --broadcast --private-key $PRIVATE_KEY
+forge script script/DeploySafe4626CollateralHelper.s.sol:DeploySafe4626CollateralHelper -f $RPC_URL --broadcast --private-key $PRIVATE_KEY --json | jq "select(.logs[0]!=null) | .logs[0]"
 forge verify-contract -f $RPC_URL --etherscan-api-key $ETHERSCAN_API_KEY CONTRACT_ADDRESS
 */
 contract DeploySafe4626CollateralHelper is Script {
     function run() public {
         vm.startBroadcast();
-        Safe4626CollateralHelper helper = new Safe4626CollateralHelper();
+        Safe4626CollateralHelper helper = new Safe4626CollateralHelper{salt: bytes32(0)}();
         vm.stopBroadcast();
         console.log("Safe4626 collateral helper deployed at", address(helper));
     }
