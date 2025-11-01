@@ -7,7 +7,7 @@ import {console} from "forge-std/console.sol";
 
 /*
 forge script script/DeployFlashLoanRedeemHelperWstethAndWeth.s.sol:DeployFlashLoanRedeemHelperWstethAndWeth -f $RPC_URL --broadcast --private-key $PRIVATE_KEY\
- --json | jq "select(.traces[1][1].arena[4].trace.address!=null) | .traces[1][1].arena[4].trace.address"
+ --json | jq "select(.traces[1][1].arena[4].trace.address!=null) | .traces.[1][1].arena[0].trace.decoded.label,.traces[1][1].arena[4].trace.address"
 forge verify-contract -f $RPC_URL --etherscan-api-key $ETHERSCAN_API_KEY CONTRACT_ADDRESS
 */
 contract DeployFlashLoanRedeemHelperWstethAndWeth is Script {
