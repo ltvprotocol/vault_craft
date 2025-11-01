@@ -12,7 +12,7 @@ contract Safe4626CollateralHelperTest is Test {
     MockERC4626CollateralVault public vault;
     address public user = makeAddr("user");
     address public receiver = makeAddr("receiver");
-    address public owner = makeAddr("owner");    
+    address public owner = makeAddr("owner");
     ERC20Mock public mockAsset;
 
     uint256 public constant INITIAL_AMOUNT = 1000e18;
