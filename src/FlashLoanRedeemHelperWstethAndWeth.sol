@@ -12,7 +12,7 @@ contract FlashLoanRedeemHelperWstethAndWeth is CommonFlashLoanHelper {
     using SafeERC20 for IWETH;
     using SafeERC20 for IstEth;
 
-    error TokenReceiverNotWhitelisted();
+    error ReceiverNotWhitelisted(address receiver);
 
     ICurve constant CURVE = ICurve(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022);
 
@@ -59,7 +59,7 @@ contract FlashLoanRedeemHelperWstethAndWeth is CommonFlashLoanHelper {
         require(
             !LTV_VAULT.isWhitelistActivated()
                 || IWhitelistRegistry(LTV_VAULT.whitelistRegistry()).isAddressWhitelisted(user),
-            TokenReceiverNotWhitelisted()
+            ReceiverNotWhitelisted(user)
         );
         WETH.safeTransfer(user, expectedWEth);
         WETH.safeTransfer(address(BALANCER_VAULT), flashAmount);
