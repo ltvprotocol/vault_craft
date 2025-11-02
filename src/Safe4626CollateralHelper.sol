@@ -33,8 +33,8 @@ contract Safe4626CollateralHelper {
     {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        assets = vault.previewMintCollateral(shares);
         try vault.assetCollateral() returns (address asset) {
+            assets = vault.previewMintCollateral(shares);
             IERC20(asset).safeTransferFrom(msg.sender, address(this), assets);
             IERC20(asset).forceApprove(address(vault), assets);
         } catch {
@@ -44,29 +44,23 @@ contract Safe4626CollateralHelper {
         require(assets <= maxAssetsIn, SlippageExceeded(assets));
     }
 
-    function safeWithdrawCollateral(
-        IERC4626Collateral vault,
-        uint256 assets,
-        address receiver,
-        address owner,
-        uint256 maxSharesIn
-    ) external returns (uint256 shares) {
+    function safeWithdrawCollateral(IERC4626Collateral vault, uint256 assets, address receiver, uint256 maxSharesIn)
+        external
+        returns (uint256 shares)
+    {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        shares = vault.withdrawCollateral(assets, receiver, owner);
+        shares = vault.withdrawCollateral(assets, receiver, msg.sender);
         require(shares <= maxSharesIn, SlippageExceeded(shares));
     }
 
-    function safeRedeemCollateral(
-        IERC4626Collateral vault,
-        uint256 shares,
-        address receiver,
-        address owner,
-        uint256 minAssetsOut
-    ) external returns (uint256 assets) {
+    function safeRedeemCollateral(IERC4626Collateral vault, uint256 shares, address receiver, uint256 minAssetsOut)
+        external
+        returns (uint256 assets)
+    {
         require(address(vault) != address(0), InvalidVault(address(vault)));
 
-        assets = vault.redeemCollateral(shares, receiver, owner);
+        assets = vault.redeemCollateral(shares, receiver, msg.sender);
         require(assets >= minAssetsOut, SlippageExceeded(assets));
     }
 }
