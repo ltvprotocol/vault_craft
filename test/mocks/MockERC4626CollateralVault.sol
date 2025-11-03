@@ -176,4 +176,3 @@ contract MockERC4626CollateralVault is IERC4626Collateral {
         }
     }
 }
-
