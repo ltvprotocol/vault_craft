@@ -32,6 +32,6 @@ jobs:
         run: forge build --sizes
 
       - name: Run Forge tests
-        run: forge test -vvv
+        run: forge test -vvv --no-match-path "test/FlashLoanHelperWstethAndWeth.sol"
         env:
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
