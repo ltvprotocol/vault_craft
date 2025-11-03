@@ -91,6 +91,14 @@ contract MockLowLevelVault is ILowLevelVault {
         balanceOf[from] -= amount;
         emit Transfer(from, address(0), amount);
     }
+
+    function isWhitelistActivated() external pure returns (bool) {
+        return true;
+    }
+
+    function whitelistRegistry() external pure returns (address) {
+        return address(0);
+    }
 }
 
 // forge-lint: disable-end

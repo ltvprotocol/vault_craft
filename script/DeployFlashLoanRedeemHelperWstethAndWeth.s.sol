@@ -15,7 +15,8 @@ contract DeployFlashLoanRedeemHelperWstethAndWeth is Script {
         if (block.chainid == 1) {
             address lidoVault = vm.envAddress("LIDO_VAULT");
             vm.startBroadcast();
-            FlashLoanRedeemHelperWstethAndWeth helper = new FlashLoanRedeemHelperWstethAndWeth{salt: bytes32(0)}(lidoVault);
+            FlashLoanRedeemHelperWstethAndWeth helper =
+                new FlashLoanRedeemHelperWstethAndWeth{salt: bytes32(0)}(lidoVault);
             vm.stopBroadcast();
             console.log("Flash loan redeem helper deployed at", address(helper));
         } else {

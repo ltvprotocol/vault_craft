@@ -11,4 +11,7 @@ interface ILowLevelVault is IERC20 {
     function executeLowLevelRebalanceShares(int256 deltaShares)
         external
         returns (int256 deltaCollateral, int256 deltaBorrow);
+
+    function isWhitelistActivated() external view returns (bool);
+    function whitelistRegistry() external view returns (address);
 }
