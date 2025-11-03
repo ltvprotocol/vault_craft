@@ -4,6 +4,13 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILowLevelVault} from "src/interfaces/ILowLevelVault.sol";
 import {IstEth} from "src/interfaces/tokens/IstEth.sol";
+import {IWhitelistRegistry} from "src/interfaces/IWhitelistRegistry.sol";
+
+contract MockWhitelistRegistry is IWhitelistRegistry {
+    function isAddressWhitelisted(address) external pure returns (bool) {
+        return true;
+    }
+}
 
 // forge-lint: disable-start
 contract MockLowLevelVault is ILowLevelVault {
@@ -23,9 +30,12 @@ contract MockLowLevelVault is ILowLevelVault {
     uint256 constant TARGET_LTV_DIVIDEND = 3;
     uint256 constant TARGET_LTV_DIVIDER = 4;
 
+    IWhitelistRegistry public immutable _whitelistRegistry;
+
     constructor(address _collateralToken, address _borrowToken) {
         collateralToken = IERC20(_collateralToken);
         borrowToken = IERC20(_borrowToken);
+        _whitelistRegistry = new MockWhitelistRegistry();
     }
 
     function previewLowLevelRebalanceShares(int256 deltaShares)
@@ -96,8 +106,8 @@ contract MockLowLevelVault is ILowLevelVault {
         return true;
     }
 
-    function whitelistRegistry() external pure returns (address) {
-        return address(0);
+    function whitelistRegistry() external view returns (address) {
+        return address(_whitelistRegistry);
     }
 }
 
