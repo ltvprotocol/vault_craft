@@ -1,29 +1,69 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IERC4626Collateral} from "../../src/interfaces/IERC4626Collateral.sol";
+import {IERC4626Collateral} from "src/interfaces/IERC4626Collateral.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
+// Standard ERC4626 Collateral mock vault
 contract MockERC4626CollateralVault is IERC4626Collateral {
     using SafeERC20 for IERC20;
+
+    // ERC20 Events
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 
     IERC20 public immutable ASSET_TOKEN;
     uint256 private _totalShares;
     uint256 private _totalAssets;
 
     mapping(address => uint256) private _balances;
+    mapping(address => mapping(address => uint256)) private _allowances;
+
+    string public name = "Mock ERC4626 Collateral Vault";
+    string public symbol = "MOCK";
+    uint8 public decimals = 18;
 
     constructor(address _asset) {
         ASSET_TOKEN = IERC20(_asset);
     }
 
-    // ERC4626Collateral
+    // ERC20
+    function totalSupply() external view returns (uint256) {
+        return _totalShares;
+    }
+
+    function balanceOf(address account) external view returns (uint256) {
+        return _balances[account];
+    }
+
+    function transfer(address to, uint256 value) external returns (bool) {
+        _transfer(msg.sender, to, value);
+        return true;
+    }
+
+    function allowance(address owner, address spender) external view returns (uint256) {
+        return _allowances[owner][spender];
+    }
+
+    function approve(address spender, uint256 value) external returns (bool) {
+        _allowances[msg.sender][spender] = value;
+        emit Approval(msg.sender, spender, value);
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 value) external returns (bool) {
+        _spendAllowance(from, msg.sender, value);
+        _transfer(from, to, value);
+        return true;
+    }
+
+    // ERC4626 Collateral
     function assetCollateral() external view returns (address) {
         return address(ASSET_TOKEN);
     }
 
-    function totalAssets() public view returns (uint256) {
+    function totalAssets() external view returns (uint256) {
         return _totalAssets;
     }
 
@@ -79,7 +119,9 @@ contract MockERC4626CollateralVault is IERC4626Collateral {
 
     function withdrawCollateral(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
         shares = convertToShares(assets);
-        require(_balances[owner] >= shares, "Insufficient shares");
+        if (msg.sender != owner) {
+            _spendAllowance(owner, msg.sender, shares);
+        }
         _burn(owner, shares);
         _totalAssets -= assets;
         ASSET_TOKEN.safeTransfer(receiver, assets);
@@ -95,7 +137,9 @@ contract MockERC4626CollateralVault is IERC4626Collateral {
     }
 
     function redeemCollateral(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
-        require(_balances[owner] >= shares, "Insufficient shares");
+        if (msg.sender != owner) {
+            _spendAllowance(owner, msg.sender, shares);
+        }
         assets = convertToAssets(shares);
         _burn(owner, shares);
         _totalAssets -= assets;
@@ -103,12 +147,13 @@ contract MockERC4626CollateralVault is IERC4626Collateral {
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
-    // Helpers
-    function balanceOf(address account) external view returns (uint256) {
-        return _balances[account];
+    // Internal
+    function _transfer(address from, address to, uint256 value) internal {
+        _balances[from] -= value;
+        _balances[to] += value;
+        emit Transfer(from, to, value);
     }
 
-    // Internal
     function _mint(address to, uint256 value) internal {
         _totalShares += value;
         _balances[to] += value;
@@ -121,9 +166,13 @@ contract MockERC4626CollateralVault is IERC4626Collateral {
         emit Transfer(from, address(0), value);
     }
 
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    function mintFreeTokens(address to, uint256 value) external {
-        _mint(to, value);
+    function _spendAllowance(address owner, address spender, uint256 value) internal {
+        uint256 currentAllowance = _allowances[owner][spender];
+        if (currentAllowance != type(uint256).max) {
+            require(currentAllowance >= value, "ERC20: insufficient allowance");
+            unchecked {
+                _allowances[owner][spender] = currentAllowance - value;
+            }
+        }
     }
 }
