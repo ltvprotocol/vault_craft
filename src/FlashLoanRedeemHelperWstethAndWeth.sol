@@ -62,7 +62,7 @@ contract FlashLoanRedeemHelperWstethAndWeth is CommonFlashLoanHelper {
             ReceiverNotWhitelisted(user)
         );
         WETH.safeTransfer(user, expectedWEth);
-        WETH.safeTransfer(address(BALANCER_VAULT), flashAmount);
+        WETH.forceApprove(address(MORPHO), flashAmount);
 
         emit SharesRedeemed(user, sharesToRedeem);
     }
