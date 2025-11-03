@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IERC4626} from "../../src/interfaces/IERC4626.sol";
-import {IERC20} from "../../src/interfaces/IERC4626.sol";
+import {IERC4626} from "src/interfaces/IERC4626.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
+// Standard ERC4626 mock vault
 contract MockERC4626Vault is IERC4626 {
+    using SafeERC20 for IERC20;
+
     IERC20 public immutable ASSET_TOKEN;
-    uint256 public totalAssetsAmount;
-    uint256 public totalSharesAmount;
-    uint256 public exchangeRate = 1e18; // 1:1 by default
-    bool public shouldRevert;
-    string public revertReason;
+    uint256 private _totalShares;
+    uint256 private _totalAssets;
 
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
+    mapping(address => uint256) private _balances;
+    mapping(address => mapping(address => uint256)) private _allowances;
 
-    string public name = "Mock Vault";
+    string public name = "Mock ERC4626 Vault";
     string public symbol = "MOCK";
     uint8 public decimals = 18;
 
@@ -23,149 +24,151 @@ contract MockERC4626Vault is IERC4626 {
         ASSET_TOKEN = IERC20(_asset);
     }
 
-    function setExchangeRate(uint256 _rate) external {
-        exchangeRate = _rate;
+    // ERC20
+    function totalSupply() external view returns (uint256) {
+        return _totalShares;
     }
 
-    function setShouldRevert(bool _shouldRevert, string calldata _reason) external {
-        shouldRevert = _shouldRevert;
-        revertReason = _reason;
+    function balanceOf(address account) external view returns (uint256) {
+        return _balances[account];
     }
 
-    function totalSupply() external view override returns (uint256) {
-        return totalSharesAmount;
-    }
-
-    function transfer(address to, uint256 value) external override returns (bool) {
-        balanceOf[msg.sender] -= value;
-        balanceOf[to] += value;
-        emit Transfer(msg.sender, to, value);
+    function transfer(address to, uint256 value) external returns (bool) {
+        _transfer(msg.sender, to, value);
         return true;
     }
 
-    function approve(address spender, uint256 value) external override returns (bool) {
-        allowance[msg.sender][spender] = value;
+    function allowance(address owner, address spender) external view returns (uint256) {
+        return _allowances[owner][spender];
+    }
+
+    function approve(address spender, uint256 value) external returns (bool) {
+        _allowances[msg.sender][spender] = value;
         emit Approval(msg.sender, spender, value);
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 value) external override returns (bool) {
-        allowance[from][msg.sender] -= value;
-        balanceOf[from] -= value;
-        balanceOf[to] += value;
-        emit Transfer(from, to, value);
+    function transferFrom(address from, address to, uint256 value) external returns (bool) {
+        _spendAllowance(from, msg.sender, value);
+        _transfer(from, to, value);
         return true;
     }
 
-    function asset() external view override returns (address) {
+    // ERC4626
+    function asset() external view returns (address) {
         return address(ASSET_TOKEN);
     }
 
-    function totalAssets() external view override returns (uint256) {
-        return totalAssetsAmount;
+    function totalAssets() external view returns (uint256) {
+        return _totalAssets;
     }
 
-    function convertToShares(uint256 assets) public view override returns (uint256) {
-        return (assets * 1e18) / exchangeRate;
+    function convertToShares(uint256 assets) public view returns (uint256) {
+        if (_totalAssets == 0) return assets;
+        return (assets * _totalShares) / _totalAssets;
     }
 
-    function convertToAssets(uint256 shares) public view override returns (uint256) {
-        return (shares * exchangeRate) / 1e18;
+    function convertToAssets(uint256 shares) public view returns (uint256) {
+        if (_totalShares == 0) return shares;
+        return (shares * _totalAssets) / _totalShares;
     }
 
-    function maxDeposit(address) external pure override returns (uint256) {
+    function maxDeposit(address) external pure returns (uint256) {
         return type(uint256).max;
     }
 
-    function previewDeposit(uint256 assets) external view override returns (uint256) {
-        if (shouldRevert) revert(revertReason);
+    function previewDeposit(uint256 assets) external view returns (uint256) {
         return convertToShares(assets);
     }
 
-    function deposit(uint256 assets, address receiver) external override returns (uint256) {
-        if (shouldRevert) revert(revertReason);
-
-        uint256 shares = convertToShares(assets);
-        totalAssetsAmount += assets;
-        totalSharesAmount += shares;
-        balanceOf[receiver] += shares;
-
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
+        shares = convertToShares(assets);
+        ASSET_TOKEN.safeTransferFrom(msg.sender, address(this), assets);
+        _mint(receiver, shares);
+        _totalAssets += assets;
         emit Deposit(msg.sender, receiver, assets, shares);
-        emit Transfer(address(0), receiver, shares);
-
-        return shares;
     }
 
-    function maxMint(address) external pure override returns (uint256) {
+    function maxMint(address) external pure returns (uint256) {
         return type(uint256).max;
     }
 
-    function previewMint(uint256 shares) external view override returns (uint256) {
-        if (shouldRevert) revert(revertReason);
+    function previewMint(uint256 shares) external view returns (uint256) {
         return convertToAssets(shares);
     }
 
-    function mint(uint256 shares, address receiver) external override returns (uint256) {
-        if (shouldRevert) revert(revertReason);
-
-        uint256 assets = convertToAssets(shares);
-        totalAssetsAmount += assets;
-        totalSharesAmount += shares;
-        balanceOf[receiver] += shares;
-
+    function mint(uint256 shares, address receiver) external returns (uint256 assets) {
+        assets = convertToAssets(shares);
+        ASSET_TOKEN.safeTransferFrom(msg.sender, address(this), assets);
+        _mint(receiver, shares);
+        _totalAssets += assets;
         emit Deposit(msg.sender, receiver, assets, shares);
-        emit Transfer(address(0), receiver, shares);
-
-        return assets;
     }
 
-    function maxWithdraw(address owner) external view override returns (uint256) {
-        return convertToAssets(balanceOf[owner]);
+    function maxWithdraw(address owner) external view returns (uint256) {
+        return convertToAssets(_balances[owner]);
     }
 
-    function previewWithdraw(uint256 assets) external view override returns (uint256) {
-        if (shouldRevert) revert(revertReason);
+    function previewWithdraw(uint256 assets) external view returns (uint256) {
         return convertToShares(assets);
     }
 
-    function withdraw(uint256 assets, address receiver, address owner) external override returns (uint256) {
-        if (shouldRevert) revert(revertReason);
-
-        uint256 shares = convertToShares(assets);
-        require(balanceOf[owner] >= shares, "Insufficient shares");
-
-        balanceOf[owner] -= shares;
-        totalSharesAmount -= shares;
-        totalAssetsAmount -= assets;
-
+    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
+        shares = convertToShares(assets);
+        if (msg.sender != owner) {
+            _spendAllowance(owner, msg.sender, shares);
+        }
+        _burn(owner, shares);
+        _totalAssets -= assets;
+        ASSET_TOKEN.safeTransfer(receiver, assets);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
-        emit Transfer(owner, address(0), shares);
-
-        return shares;
     }
 
-    function maxRedeem(address owner) external view override returns (uint256) {
-        return balanceOf[owner];
+    function maxRedeem(address owner) external view returns (uint256) {
+        return _balances[owner];
     }
 
-    function previewRedeem(uint256 shares) external view override returns (uint256) {
-        if (shouldRevert) revert(revertReason);
+    function previewRedeem(uint256 shares) external view returns (uint256) {
         return convertToAssets(shares);
     }
 
-    function redeem(uint256 shares, address receiver, address owner) external override returns (uint256) {
-        if (shouldRevert) revert(revertReason);
-
-        require(balanceOf[owner] >= shares, "Insufficient shares");
-
-        uint256 assets = convertToAssets(shares);
-        balanceOf[owner] -= shares;
-        totalSharesAmount -= shares;
-        totalAssetsAmount -= assets;
-
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
+        if (msg.sender != owner) {
+            _spendAllowance(owner, msg.sender, shares);
+        }
+        assets = convertToAssets(shares);
+        _burn(owner, shares);
+        _totalAssets -= assets;
+        ASSET_TOKEN.safeTransfer(receiver, assets);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
-        emit Transfer(owner, address(0), shares);
+    }
 
-        return assets;
+    // Internal
+    function _transfer(address from, address to, uint256 value) internal {
+        _balances[from] -= value;
+        _balances[to] += value;
+        emit Transfer(from, to, value);
+    }
+
+    function _mint(address to, uint256 value) internal {
+        _totalShares += value;
+        _balances[to] += value;
+        emit Transfer(address(0), to, value);
+    }
+
+    function _burn(address from, uint256 value) internal {
+        _balances[from] -= value;
+        _totalShares -= value;
+        emit Transfer(from, address(0), value);
+    }
+
+    function _spendAllowance(address owner, address spender, uint256 value) internal {
+        uint256 currentAllowance = _allowances[owner][spender];
+        if (currentAllowance != type(uint256).max) {
+            require(currentAllowance >= value, "ERC20: insufficient allowance");
+            unchecked {
+                _allowances[owner][spender] = currentAllowance - value;
+            }
+        }
     }
 }
