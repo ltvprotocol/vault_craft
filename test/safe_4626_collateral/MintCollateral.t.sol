@@ -2,25 +2,25 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {Safe4626Helper} from "src/Safe4626Helper.sol";
-import {IERC4626} from "src/interfaces/IERC4626.sol";
-import {MockERC4626Vault} from "test/mocks/MockERC4626Vault.sol";
+import {Safe4626CollateralHelper} from "src/Safe4626CollateralHelper.sol";
+import {IERC4626Collateral} from "src/interfaces/IERC4626Collateral.sol";
+import {MockERC4626CollateralVault} from "test/mocks/MockERC4626CollateralVault.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20Mock} from "openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
 import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
 
-contract Safe4626HelperTest is Test {
-    Safe4626Helper public helper;
-    MockERC4626Vault public vault;
+contract Safe4626CollateralHelperTest is Test {
+    Safe4626CollateralHelper public helper;
+    MockERC4626CollateralVault public vault;
     ERC20Mock public asset;
     address public user;
     address public receiver;
 
     function setUp() public {
-        helper = new Safe4626Helper();
+        helper = new Safe4626CollateralHelper();
         asset = new ERC20Mock();
-        vault = new MockERC4626Vault(address(asset));
+        vault = new MockERC4626CollateralVault(address(asset));
         
         user = makeAddr("user");
         receiver = makeAddr("receiver");
@@ -30,23 +30,23 @@ contract Safe4626HelperTest is Test {
     }
 
     // vault == 0
-    function test_safeMint_RevertWhen_VaultIsZero() public {
+    function test_safeMintCollateral_RevertWhen_VaultIsZero() public {
         uint256 shares = 100 ether;
         uint256 maxAssetsIn = type(uint256).max;
 
         vm.expectRevert(abi.encodeWithSelector(
-            Safe4626Helper.InvalidVault.selector,
+            Safe4626CollateralHelper.InvalidVault.selector,
             address(0)
         ));
 
         vm.prank(user);
-        helper.safeMint(IERC4626(address(0)), shares, receiver, maxAssetsIn);
+        helper.safeMintCollateral(IERC4626Collateral(address(0)), shares, receiver, maxAssetsIn);
     }
 
     // safeTransferFrom - no money (insufficient balance)
-    function test_safeMint_RevertWhen_InsufficientBalance() public {
+    function test_safeMintCollateral_RevertWhen_InsufficientBalance() public {
         uint256 shares = 100 ether;
-        uint256 expectedAssets = vault.previewMint(shares);  // e.g., 100 ether
+        uint256 expectedAssets = vault.previewMintCollateral(shares);  // e.g., 100 ether
         uint256 maxAssetsIn = type(uint256).max;
 
         // User has less than expected assets
@@ -56,14 +56,14 @@ contract Safe4626HelperTest is Test {
         asset.approve(address(helper), type(uint256).max);  // Approve enough
 
         vm.expectRevert();  // SafeERC20 transfer will revert
-        helper.safeMint(vault, shares, receiver, maxAssetsIn);
+        helper.safeMintCollateral(vault, shares, receiver, maxAssetsIn);
         vm.stopPrank();
     }
 
     // safeTransferFrom - insufficient allowance
-    function test_safeMint_RevertWhen_InsufficientAllowance() public {
+    function test_safeMintCollateral_RevertWhen_InsufficientAllowance() public {
         uint256 shares = 100 ether;
-        uint256 expectedAssets = vault.previewMint(shares);  // e.g., 100 ether
+        uint256 expectedAssets = vault.previewMintCollateral(shares);  // e.g., 100 ether
         uint256 maxAssetsIn = type(uint256).max;
 
         deal(address(asset), user, 1000 ether);  // Has enough balance
@@ -72,12 +72,12 @@ contract Safe4626HelperTest is Test {
         asset.approve(address(helper), 50 ether);  // But approved less than needed
 
         vm.expectRevert();  // SafeERC20 transfer will revert
-        helper.safeMint(vault, shares, receiver, maxAssetsIn);
+        helper.safeMintCollateral(vault, shares, receiver, maxAssetsIn);
         vm.stopPrank();
     }
 
     // vault no asset
-    function test_safeMint_RevertWhen_VaultHasNoAsset() public {
+    function test_safeMintCollateral_RevertWhen_VaultHasNoAsset() public {
         uint256 shares = 100 ether;
         uint256 maxAssetsIn = type(uint256).max;
 
@@ -86,18 +86,18 @@ contract Safe4626HelperTest is Test {
         vm.startPrank(user);
         asset.approve(address(helper), type(uint256).max);
 
-        MockERC4626Vault emptyVault = MockERC4626Vault(address(asset));
+        MockERC4626CollateralVault emptyVault = MockERC4626CollateralVault(address(asset));
 
         vm.expectRevert(abi.encodeWithSelector(
-            Safe4626Helper.InvalidVault.selector,
+            Safe4626CollateralHelper.InvalidVault.selector,
             address(emptyVault)
         ));
-        helper.safeMint(IERC4626(address(emptyVault)), shares, receiver, maxAssetsIn);
+        helper.safeMintCollateral(IERC4626Collateral(address(emptyVault)), shares, receiver, maxAssetsIn);
         vm.stopPrank();
     }
 
     // vault mint no money
-    function test_safeMint_RevertWhen_VaultMintReverts() public {
+    function test_safeMintCollateral_RevertWhen_VaultMintReverts() public {
         deal(address(asset), user, 1000 ether);
 
         vm.startPrank(user);
@@ -110,14 +110,14 @@ contract Safe4626HelperTest is Test {
             userBalance,
             type(uint256).max
         ));
-        helper.safeMint(vault, type(uint256).max, receiver, type(uint256).max);
+        helper.safeMintCollateral(vault, type(uint256).max, receiver, type(uint256).max);
         vm.stopPrank();
     }
 
     // vault assets < maxAssetsIn
-    function test_safeMint_Success_WhenAssetsBelowMaximum() public {
+    function test_safeMintCollateral_Success_WhenAssetsBelowMaximum() public {
         uint256 shares = 100 ether;
-        uint256 expectedAssets = vault.previewMint(shares);  // e.g., 100 ether
+        uint256 expectedAssets = vault.previewMintCollateral(shares);  // e.g., 100 ether
         uint256 maxAssetsIn = 150 ether;  // More than expected
 
         uint256 userBalanceBefore = asset.balanceOf(user);
@@ -125,7 +125,7 @@ contract Safe4626HelperTest is Test {
         vm.startPrank(user);
         asset.approve(address(helper), expectedAssets);
 
-        uint256 assets = helper.safeMint(vault, shares, receiver, maxAssetsIn);
+        uint256 assets = helper.safeMintCollateral(vault, shares, receiver, maxAssetsIn);
 
         vm.stopPrank();
 
@@ -136,9 +136,9 @@ contract Safe4626HelperTest is Test {
     }
 
     // vault assets > maxAssetsIn
-    function test_safeMint_RevertWhen_AssetsAboveMaximum() public {
+    function test_safeMintCollateral_RevertWhen_AssetsAboveMaximum() public {
         uint256 shares = 100 ether;
-        uint256 expectedAssetsNoSlippage = vault.previewMint(shares);  // 100 ether
+        uint256 expectedAssetsNoSlippage = vault.previewMintCollateral(shares);  // 100 ether
         uint256 maxAssetsIn = expectedAssetsNoSlippage - 1;  // Less than expected
 
         deal(address(asset), user, 1000 ether);
@@ -147,17 +147,17 @@ contract Safe4626HelperTest is Test {
         asset.approve(address(helper), type(uint256).max);
 
         vm.expectRevert(abi.encodeWithSelector(
-            Safe4626Helper.SlippageExceeded.selector,
+            Safe4626CollateralHelper.SlippageExceeded.selector,
             expectedAssetsNoSlippage
         ));
-        helper.safeMint(vault, shares, receiver, maxAssetsIn);
+        helper.safeMintCollateral(vault, shares, receiver, maxAssetsIn);
         vm.stopPrank();
     }
 
     // vault assets == maxAssetsIn
-    function test_safeMint_Success_WhenAssetsEqualMaximum() public {
+    function test_safeMintCollateral_Success_WhenAssetsEqualMaximum() public {
         uint256 shares = 100 ether;
-        uint256 expectedAssets = vault.previewMint(shares);  // e.g., 100 ether
+        uint256 expectedAssets = vault.previewMintCollateral(shares);  // e.g., 100 ether
         uint256 maxAssetsIn = expectedAssets;  // Exactly equal
 
         uint256 userBalanceBefore = asset.balanceOf(user);
@@ -165,7 +165,7 @@ contract Safe4626HelperTest is Test {
         vm.startPrank(user);
         asset.approve(address(helper), expectedAssets);
 
-        uint256 assets = helper.safeMint(vault, shares, receiver, maxAssetsIn);
+        uint256 assets = helper.safeMintCollateral(vault, shares, receiver, maxAssetsIn);
 
         vm.stopPrank();
 

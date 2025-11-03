@@ -1,23 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IERC4626} from "src/interfaces/IERC4626.sol";
+import {IERC4626Collateral} from "src/interfaces/IERC4626Collateral.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-// Mock vault that returns fewer shares (simulating slippage)
-contract MockVaultWithSlippage is IERC4626 {
+// Standard ERC4626 Collateral mock vault
+contract MockERC4626CollateralVault is IERC4626Collateral {
     using SafeERC20 for IERC20;
+
+    // ERC20 Events
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 
     IERC20 public immutable ASSET_TOKEN;
     uint256 private _totalShares;
     uint256 private _totalAssets;
-    uint256 public constant slippagePercent = 10;  // 10% slippage
 
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    string public name = "Mock Vault With Slippage";
+    string public name = "Mock ERC4626 Collateral Vault";
     string public symbol = "MOCK";
     uint8 public decimals = 18;
 
@@ -55,8 +58,8 @@ contract MockVaultWithSlippage is IERC4626 {
         return true;
     }
 
-    // ERC4626
-    function asset() external view returns (address) {
+    // ERC4626 Collateral
+    function assetCollateral() external view returns (address) {
         return address(ASSET_TOKEN);
     }
 
@@ -74,34 +77,31 @@ contract MockVaultWithSlippage is IERC4626 {
         return (shares * _totalAssets) / _totalShares;
     }
 
-    function maxDeposit(address) external pure returns (uint256) {
+    function maxDepositCollateral(address) external pure returns (uint256) {
         return type(uint256).max;
     }
 
-    function previewDeposit(uint256 assets) external view returns (uint256) {
-        // Preview shows normal shares (no slippage in preview)
+    function previewDepositCollateral(uint256 assets) external view returns (uint256) {
         return convertToShares(assets);
     }
 
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
+    function depositCollateral(uint256 assets, address receiver) external returns (uint256 shares) {
         shares = convertToShares(assets);
-        // Apply 10% slippage - return fewer shares than expected
-        shares = shares * (100 - slippagePercent) / 100;
         ASSET_TOKEN.safeTransferFrom(msg.sender, address(this), assets);
         _mint(receiver, shares);
         _totalAssets += assets;
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
-    function maxMint(address) external pure returns (uint256) {
+    function maxMintCollateral(address) external pure returns (uint256) {
         return type(uint256).max;
     }
 
-    function previewMint(uint256 shares) external view returns (uint256) {
+    function previewMintCollateral(uint256 shares) external view returns (uint256) {
         return convertToAssets(shares);
     }
 
-    function mint(uint256 shares, address receiver) external returns (uint256 assets) {
+    function mintCollateral(uint256 shares, address receiver) external returns (uint256 assets) {
         assets = convertToAssets(shares);
         ASSET_TOKEN.safeTransferFrom(msg.sender, address(this), assets);
         _mint(receiver, shares);
@@ -109,15 +109,15 @@ contract MockVaultWithSlippage is IERC4626 {
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
-    function maxWithdraw(address owner) external view returns (uint256) {
+    function maxWithdrawCollateral(address owner) external view returns (uint256) {
         return convertToAssets(_balances[owner]);
     }
 
-    function previewWithdraw(uint256 assets) external view returns (uint256) {
+    function previewWithdrawCollateral(uint256 assets) external view returns (uint256) {
         return convertToShares(assets);
     }
 
-    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
+    function withdrawCollateral(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
         shares = convertToShares(assets);
         if (msg.sender != owner) {
             _spendAllowance(owner, msg.sender, shares);
@@ -128,15 +128,15 @@ contract MockVaultWithSlippage is IERC4626 {
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
-    function maxRedeem(address owner) external view returns (uint256) {
+    function maxRedeemCollateral(address owner) external view returns (uint256) {
         return _balances[owner];
     }
 
-    function previewRedeem(uint256 shares) external view returns (uint256) {
+    function previewRedeemCollateral(uint256 shares) external view returns (uint256) {
         return convertToAssets(shares);
     }
 
-    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
+    function redeemCollateral(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
         if (msg.sender != owner) {
             _spendAllowance(owner, msg.sender, shares);
         }
