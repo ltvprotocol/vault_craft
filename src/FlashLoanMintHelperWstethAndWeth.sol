@@ -45,7 +45,7 @@ contract FlashLoanMintHelperWstethAndWeth is CommonFlashLoanHelper {
         // forge-lint: disable-next-line(unsafe-typecast)
         LTV_VAULT.executeLowLevelRebalanceShares(int256(sharesToMint));
 
-        WETH.safeTransfer(address(BALANCER_VAULT), flashAmount);
+        WETH.forceApprove(address(MORPHO), flashAmount);
 
         LTV_VAULT.safeTransfer(user, sharesToMint);
 
