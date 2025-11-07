@@ -28,6 +28,14 @@ contract MockLowLevelVault is ILowLevelVault {
         borrowToken = IERC20(_borrowToken);
     }
 
+    function asset() external view returns (address) {
+        return address(borrowToken);
+    }
+
+    function assetCollateral() external view returns (address) {
+        return address(collateralToken);
+    }
+
     function previewLowLevelRebalanceShares(int256 deltaShares)
         public
         view

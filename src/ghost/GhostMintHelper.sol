@@ -5,6 +5,7 @@ import {ILowLevelVault} from "src/interfaces/ILowLevelVault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+// forge-lint: disable-start
 contract GhostMintHelper is Ownable {
     using SafeERC20 for IERC20;
     using SafeERC20 for ILowLevelVault;
@@ -45,3 +46,4 @@ contract GhostMintHelper is Ownable {
         IERC20(token).safeTransfer(msg.sender, IERC20(token).balanceOf(address(this)));
     }
 }
+// forge-lint: disable-end

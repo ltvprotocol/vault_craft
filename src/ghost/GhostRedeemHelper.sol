@@ -5,6 +5,7 @@ import {ILowLevelVault} from "src/interfaces/ILowLevelVault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+// forge-lint: disable-start
 contract GhostRedeemHelper is Ownable {
     using SafeERC20 for IERC20;
     using SafeERC20 for ILowLevelVault;
@@ -34,7 +35,7 @@ contract GhostRedeemHelper is Ownable {
         address borrowAsset = GHOST_VAULT.asset();
 
         GHOST_VAULT.safeTransferFrom(msg.sender, address(this), sharesToRedeem);
-        IERC20(borrowAsset).forceApprove(address(GHOST_VAULT), borrow);
+        IERC20(borrowAsset).forceApprove(address(GHOST_VAULT), uint256(-borrow));
         GHOST_VAULT.executeLowLevelRebalanceShares(-int256(sharesToRedeem));
 
         IERC20(borrowAsset).safeTransfer(msg.sender, borrowToReturn);
@@ -45,3 +46,4 @@ contract GhostRedeemHelper is Ownable {
         IERC20(token).safeTransfer(msg.sender, IERC20(token).balanceOf(address(this)));
     }
 }
+// forge-lint: disable-end
