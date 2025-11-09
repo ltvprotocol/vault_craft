@@ -41,7 +41,6 @@ contract Safe4626CollateralHelperTest is Test {
     // safeTransferFrom - no money (insufficient balance)
     function test_safeMintCollateral_RevertWhen_InsufficientBalance() public {
         uint256 shares = 100 ether;
-        uint256 expectedAssets = vault.previewMintCollateral(shares); // e.g., 100 ether
         uint256 maxAssetsIn = type(uint256).max;
 
         // User has less than expected assets
@@ -58,7 +57,6 @@ contract Safe4626CollateralHelperTest is Test {
     // safeTransferFrom - insufficient allowance
     function test_safeMintCollateral_RevertWhen_InsufficientAllowance() public {
         uint256 shares = 100 ether;
-        uint256 expectedAssets = vault.previewMintCollateral(shares); // e.g., 100 ether
         uint256 maxAssetsIn = type(uint256).max;
 
         deal(address(asset), user, 1000 ether); // Has enough balance
