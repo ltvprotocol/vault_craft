@@ -30,6 +30,15 @@ Flash loan helpers that enable minting and redeeming LTV vault shares using flas
   - Repays the flash loan and sends remaining WETH to the user (if whitelisted)
   - Includes slippage protection for the Curve swap
 
+## Deployed Addresses
+
+### Sepolia
+
+| Contract | Address |
+|----------|---------|
+| `Safe4626CollateralHelper` | [`0x25cd7dc2ffb7c453241a8c530e73c34bd642809c`](https://sepolia.etherscan.io/address/0x25cd7dc2ffb7c453241a8c530e73c34bd642809c) |
+| `Safe4626Helper` | [`0xb79baeb8eed4d53f040dfea46703812bbd0a1d9e`](https://sepolia.etherscan.io/address/0xb79baeb8eed4d53f040dfea46703812bbd0a1d9e) |
+
 ## Security Audit
 
 These contracts have undergone a security audit by Oxorio:
