@@ -60,7 +60,6 @@ contract Safe4626HelperTest is Test {
     // no approve for vault
     function test_safeWithdraw_RevertWhen_InsufficientAllowance() public {
         uint256 assets = 100 ether;
-        uint256 expectedShares = vault.previewWithdraw(assets); // e.g., 100 ether
         uint256 maxSharesOut = type(uint256).max;
 
         // User has shares but hasn't approved the helper

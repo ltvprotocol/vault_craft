@@ -5,7 +5,6 @@ import {ILowLevelVault} from "src/interfaces/ILowLevelVault.sol";
 import {IWETH} from "src/interfaces/tokens/IWETH.sol";
 import {IstEth} from "src/interfaces/tokens/IstEth.sol";
 import {IwstEth} from "src/interfaces/tokens/IwstEth.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFlashLoanHelperErrors} from "src/interfaces/IFlashLoanHelperErrors.sol";
 import {IFlashLoanHelperEvents} from "src/interfaces/IFlashLoanHelperEvents.sol";
 import {IMoprho} from "src/interfaces/IMoprho.sol";

@@ -14,7 +14,7 @@ interface ILowLevelVault is IERC20 {
 
     function asset() external view returns (address);
     function assetCollateral() external view returns (address);
-    
+
     function isWhitelistActivated() external view returns (bool);
     function whitelistRegistry() external view returns (address);
 }
