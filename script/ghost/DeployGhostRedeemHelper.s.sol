@@ -13,7 +13,7 @@ forge verify-contract -f $RPC_URL --etherscan-api-key $ETHERSCAN_API_KEY CONTRAC
 contract DeployGhostRedeemHelperScript is Script {
     function run() public {
         vm.startBroadcast();
-        GhostRedeemHelper helper = new GhostRedeemHelper{salt: bytes32(0)}(0xE2A7f267124AC3E4131f27b9159c78C521A44F3c);
+        GhostRedeemHelper helper = new GhostRedeemHelper{salt: bytes32(0)}(0xE2A7f267124AC3E4131f27b9159c78C521A44F3c, 0x249f82caa683a49Fe92F5E9518BbDBE443dfF1A2);
         vm.stopBroadcast();
         console2.log("Ghost redeem helper deployed at", address(helper));
     }
