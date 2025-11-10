@@ -14,7 +14,7 @@ contract GhostRedeemHelper is Ownable {
 
     ILowLevelVault public immutable GHOST_VAULT;
 
-    constructor(address _ltvVault) Ownable(msg.sender) {
+    constructor(address _ltvVault, address _initialOwner) Ownable(_initialOwner) {
         GHOST_VAULT = ILowLevelVault(_ltvVault);
     }
 
