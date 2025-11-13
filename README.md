@@ -32,12 +32,23 @@ Flash loan helpers that enable minting and redeeming LTV vault shares using flas
 
 ## Deployed Addresses
 
+### Mainnet
+
+| Name | Address |
+|------|---------|
+| **Safe4626Helper** | [`0xb79baeb8eed4d53f040dfea46703812bbd0a1d9e`](https://etherscan.io/address/0xb79baeb8eed4d53f040dfea46703812bbd0a1d9e) |
+| **Safe4626CollateralHelper** | [`0x25cd7dc2ffb7c453241a8c530e73c34bd642809c`](https://etherscan.io/address/0x25cd7dc2ffb7c453241a8c530e73c34bd642809c) |
+| **FlashLoanMintHelperWstethAndWeth** | [`0x2f5636d96ed34cd9f3eb3ab5b657175a36408645`](https://etherscan.io/address/0x2f5636d96ed34cd9f3eb3ab5b657175a36408645) |
+| **FlashLoanRedeemHelperWstethAndWeth** | [`0xa5836756b1d5db03dfccbafc4083a1e675a1f644`](https://etherscan.io/address/0xa5836756b1d5db03dfccbafc4083a1e675a1f644) |
+
 ### Sepolia
 
 | Contract | Address |
 |----------|---------|
 | `Safe4626CollateralHelper` | [`0x25cd7dc2ffb7c453241a8c530e73c34bd642809c`](https://sepolia.etherscan.io/address/0x25cd7dc2ffb7c453241a8c530e73c34bd642809c) |
 | `Safe4626Helper` | [`0xb79baeb8eed4d53f040dfea46703812bbd0a1d9e`](https://sepolia.etherscan.io/address/0xb79baeb8eed4d53f040dfea46703812bbd0a1d9e) |
+| `GhostMintHelper` | [`0x169d36086e2a68062ed36bac5e0e733c5f0b872a`](https://sepolia.etherscan.io/address/0x169d36086e2a68062ed36bac5e0e733c5f0b872a) |
+| `GhostRedeemHelper` | [`0x5f3eb9daef690364c2539b8148faa421b60427b2`](https://sepolia.etherscan.io/address/0x5f3eb9daef690364c2539b8148faa421b60427b2) |
 
 ## Security Audit
 
